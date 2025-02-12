@@ -52,12 +52,32 @@ up = False
 down = False
 
 ball = spatial_object()
+ball.pos.x = 5
+ball.pos.y = 5
+
 
 from network import Network
+
 network = Network()
 
+from time import time as epoch
+from time import sleep
+
+stamp = epoch()
 # Main loop
+
+worldstate=[]
 while True:
+    if (epoch() - stamp)*1000 > 100:
+        stamp = epoch()
+        worldstate = network.send((ball.pos.x,ball.pos.y,ball.pos.z))
+        if worldstate:
+            # print(worldstate)
+            pass
+        else:
+            print("error connecting")
+        # print(worldstate)
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.display.quit()
@@ -94,12 +114,15 @@ while True:
     #     ball.acc.y = 1
     ball.apply()
     # Draw a ciK_LEFTrcle
-    center = (
-        width // 2 + ball.pos.x / 1000,
-        height // 2 + ball.pos.y / 1000,
-    )  # Center of the screen
-    radius = 50
-    pygame.draw.circle(screen, RED, center, radius)
+    for (x,y,z) in worldstate:
+        center = (
+            #           width // 2 + ball.pos.x / 1000,
+            # height // 2 + ball.pos.y / 1000,
+            width // 2 + x / 1000,
+            height // 2 + y / 1000,
+        )  # Center of the screen
+        radius = 50
+        pygame.draw.circle(screen, RED, center, radius)
 
     # Update the display
     pygame.display.flip()
