@@ -52,6 +52,10 @@ up = False
 down = False
 
 ball = spatial_object()
+
+from network import Network
+network = Network()
+
 # Main loop
 while True:
     for event in pygame.event.get():
