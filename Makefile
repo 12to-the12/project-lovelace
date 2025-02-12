@@ -18,6 +18,16 @@ clean:
 	rm -rf ./dist/
 	rm ./main.spec
 
+
+stop-server:
+	-ssh services "tmux kill-session -t 'server'"
+	
+push-server: stop-server
+	rsync -avzch ./src/server.py services:~/server/server.py
+
+start-server: push-server
+	ssh services "tmux new-session -d -s 'server' ./server/server.py"
+	ssh services "tmux ls"
 environment-install:
 	wine ${wPython}/python.exe ${wPython}/Scripts/pip.exe install -r requirements.txt
 
