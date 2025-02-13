@@ -36,5 +36,5 @@ build-exe: clean environment-install
 	/home/logan/.wine/drive_c/users/logan/AppData/Local/Programs/Python/Python313/Scripts/pyinstaller.exe --windowed --add-data "rootCA.pem;rootCA.pem" ./src/main.py
 
 
-test-exe: build-exe
+test-exe:
 	wine ./dist/main/main.exe

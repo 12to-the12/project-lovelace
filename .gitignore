@@ -10,7 +10,7 @@ __pycache__/
 .Python
 build/
 develop-eggs/
-dist/
+# dist/
 downloads/
 eggs/
 .eggs/
@@ -129,6 +129,6 @@ dmypy.json
 .pyre/
 
 # other
-dist/
+# dist/
 build/
 main.spec
