@@ -33,8 +33,8 @@ environment-install:
 
 build-exe: clean environment-install
 	# pyinstaller --windowed ./src/main.py
-	/home/logan/.wine/drive_c/users/logan/AppData/Local/Programs/Python/Python313/Scripts/pyinstaller.exe --windowed --add-data "rootCA.pem;rootCA.pem" ./src/main.py
+	/home/logan/.wine/drive_c/users/logan/AppData/Local/Programs/Python/Python313/Scripts/pyinstaller.exe --onefile --windowed --add-data "rootCA.pem;rootCA.pem" ./src/main.py
 
 
-test-exe:
+test-exe: build-exe
 	wine ./dist/main/main.exe
