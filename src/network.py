@@ -1,4 +1,8 @@
 import socket
+
+# from ssl import SSLSocket as socket
+import ssl
+
 # import pickle
 from pickle import dumps as serialize
 from pickle import loads as deserialize
@@ -6,18 +10,25 @@ from pickle import loads as deserialize
 
 class Network:
     def __init__(self):
+        # context = ssl.create_default_context()
+        context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+        # context.load_cert_chain(certfile="cert.pem", keyfile="key.pem")
+        context.load_verify_locations("rootCA.pem")
+
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         self.server = "lovelace.loganhillyer.me"
         # self.server = "47.155.218.95"
 
-        self.port = 1111
+        self.port = 5002
 
         self.addr = (self.server, self.port)
+        # self.socket = socket.create_connection(self.addr)
+        self.socket = context.wrap_socket(self.socket, server_hostname=self.server)
 
         self.connection_id = self.connect()
-        print("connection successful ")
+        # print("connection successful ")
         print(f"response: {self.connection_id}")
 
     def connect(self):
@@ -37,8 +48,6 @@ class Network:
         except socket.error as e:
             print(e)
             return None
-
-
 
 
 # network = Network()

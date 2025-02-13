@@ -12,11 +12,11 @@ run:
 	.venv/bin/python src/main.py
 
 clean:
-	rm -rf ./.venv
-	rm -rf ./venv/
-	rm -rf ./build/
-	rm -rf ./dist/
-	rm ./main.spec
+	-rm -rf ./.venv
+	-rm -rf ./venv/
+	-rm -rf ./build/
+	-rm -rf ./dist/
+	-rm ./main.spec
 
 
 stop-server:
@@ -33,7 +33,7 @@ environment-install:
 
 build-exe: clean environment-install
 	# pyinstaller --windowed ./src/main.py
-	/home/logan/.wine/drive_c/users/logan/AppData/Local/Programs/Python/Python313/Scripts/pyinstaller.exe ./src/main.py
+	/home/logan/.wine/drive_c/users/logan/AppData/Local/Programs/Python/Python313/Scripts/pyinstaller.exe --windowed --add-data "rootCA.pem;rootCA.pem" ./src/main.py
 
 
 test-exe: build-exe
