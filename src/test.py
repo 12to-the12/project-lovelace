@@ -1,23 +1,18 @@
-import asyncio
+import threading
 from time import sleep
 
-
-async def printerbrr():
-    await asyncio.sleep(3)
-    print("hi")
-
-
-async def halloo():
+def myfunction(subject):
     for _ in range(10):
-        print("this is another task")
-        await asyncio.sleep(0.1)
-        print("and yet another")
+        print(f"{subject}")
+        sleep(0.1)
 
 
-async def main():
-    a = asyncio.create_task(printerbrr())
-    b = asyncio.create_task(halloo())
-    await asyncio.gather(a, b)
+if __name__=="__main__":
+    mythread = threading.Thread(target=myfunction,args=("A",))
+    mythread.start()
 
+    mythreadb = threading.Thread(target=myfunction,args=("B",))
+    mythreadb.start()
 
-asyncio.run(main())
+    mythreadc = threading.Thread(target=myfunction,args=("C",))
+    mythreadc.start()

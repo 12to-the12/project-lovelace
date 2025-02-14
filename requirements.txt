@@ -1,2 +1,5 @@
 pygame
-ruff
+# ruff
+msgpack
+# mypy
+pytest

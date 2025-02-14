@@ -1,6 +1,25 @@
+from os import times_result
+import socket
 import pygame
 import sys
 import asyncio
+import msgpack
+import threading
+from network import Frenship
+
+network = Frenship()
+
+from time import time as epoch
+from time import sleep
+
+# while True:
+#     # print("polling")
+#     data = network.udp_scan()
+#     print(f"received: {data["data"]}")
+#     MESSAGE = "henlo"
+#     print(f"sending... <{MESSAGE}>")
+#     # network.udp_send(MESSAGE)
+
 
 pygame.display.set_caption("CLIENT")
 
@@ -20,18 +39,24 @@ class spatial_object:
         self.vel = vel
         self.acc = acc
 
+        self.last_updated = epoch()
+
     def apply(self):
-        self.vel.x += self.acc.x
-        self.vel.y += self.acc.y
-        self.vel.z += self.acc.z
+        timestamp = epoch()
+        elapsed = timestamp - self.last_updated
+        self.last_updated = timestamp
+        print(f"ball apply elapsed: {elapsed}")
+        self.vel.x += self.acc.x * elapsed
+        self.vel.y += self.acc.y * elapsed
+        self.vel.z += self.acc.z * elapsed
 
-        self.pos.x += self.vel.x
-        self.pos.y += self.vel.y
-        self.pos.z += self.vel.z
+        self.pos.x += self.vel.x * elapsed
+        self.pos.y += self.vel.y * elapsed
+        self.pos.z += self.vel.z * elapsed
 
-        self.vel.x *= 0.998
-        self.vel.y *= 0.998
-        self.vel.z *= 0.998
+        # self.vel.x *= 0.9999**elapsed
+        # self.vel.y *= 0.9999**elapsed
+        # self.vel.z *= 0.9999**elapsed
 
 
 # Initialize Pygame
@@ -50,7 +75,10 @@ pygame.display.set_caption("Draw a Circle")
 
 # Define colors
 BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
 RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
 x = 0
 y = 0
 left = False
@@ -63,47 +91,81 @@ ball.pos.x = 5
 ball.pos.y = 5
 
 
-from network import Network
-
-network = Network()
-
-from time import time as epoch
-from time import sleep
-
+sleep_ms = lambda x: sleep(x / 1000)
 stamp = epoch()
 # Main loop
 
 awaiting = None
 
 
-async def fetch_worldstate():
+# async def fetch_worldstate():
+#     global worldstate
+#     worldstate = network.tcp_send((ball.pos.x, ball.pos.y, ball.pos.z))
+
+
+# async def update():
+
+#     # global stamp, awaiting
+#     # if (epoch() - stamp) * 1000 > update_interval:
+#     #     if awaiting:
+#     #         await awaiting
+#     #     awaiting = asyncio.create_task(fetch_worldstate())
+#     #     # await awaiting
+#     #     stamp = epoch()
+#     #     if worldstate:
+#     #         # print(worldstate)
+#     #         pass
+#     #     else:
+#     #         print("error connecting")
+#     #     # print(worldstate)
+
+worldstate = {}
+
+
+def read_world():
     global worldstate
-    worldstate = network.send((ball.pos.x, ball.pos.y, ball.pos.z))
-
-
-async def update():
-    global stamp, awaiting
-    if (epoch() - stamp) * 1000 > update_interval:
-        if awaiting:
-            await awaiting
-        awaiting = asyncio.create_task(fetch_worldstate())
-        # await awaiting
-        stamp = epoch()
-        if worldstate:
-            # print(worldstate)
-            pass
-        else:
-            print("error connecting")
+    while True:
+        worldstate = network.udp_scan()
         # print(worldstate)
 
 
+def send_position():
+    while True:
+        packet = {
+            "type": "player_state",
+            "id": 1,
+            "player_state": {
+                "position": (ball.pos.x, ball.pos.y, ball.pos.z),
+                "velocity": (ball.vel.x, ball.vel.y, ball.vel.z),
+                "acceleration": (ball.acc.x, ball.acc.y, ball.acc.z),
+            },
+            "timestamp": epoch(),
+        }
+        # print(packet)
+        network.udp_send(packet)
+        sleep_ms(10)
+
+
+acc = 1e2
+
+send_position_thread = threading.Thread(target=send_position)
+send_position_thread.start()
+
+
+read_worldstate_thread = threading.Thread(target=read_world)
+read_worldstate_thread.start()
+
+from pygame.time import Clock
+
+clock = Clock()
 ball.pos.x = width // 2
 ball.pos.y = height // 2
-worldstate = []
 # asyncio.run(fetch_worldstate())
 while True:
+    clock.tick(100)
     start = epoch()
-    asyncio.run(update())
+    # asyncio.run(update())
+    # ball.vel.x = 100
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.display.quit()
@@ -138,17 +200,17 @@ while True:
     # if down:
     #     ball.acc.y = 1
     if right:
-        ball.acc.x = 1e-3
+        ball.acc.x = acc
     if left:
-        ball.acc.x = -1e-3
+        ball.acc.x = -acc
     if right and left:
         ball.acc.x = 0
     if (not right) and (not left):
         ball.acc.x = 0
     if down:
-        ball.acc.y = 1e-3
+        ball.acc.y = acc
     if up:
-        ball.acc.y = -1e-3
+        ball.acc.y = -acc
     if down and up:
         ball.acc.y = 0
     if (not up) and (not down):
@@ -164,18 +226,36 @@ while True:
     radius = 50
     pygame.draw.circle(screen, RED, center, radius)
     # Draw a ciK_LEFTrcle
-    for x, y, z in worldstate:
+    # if worldstate:
+    #     print(worldstate)
+    for ID in worldstate.keys():
+        # print(type(worldstate[ID]))
+        x, y, z = worldstate[ID]["player_state"]["position"]
+        vx, vy, vz = worldstate[ID]["player_state"]["velocity"]
+        timestamp = worldstate[ID]["timestamp"]
+        age = epoch() - timestamp
+        # print(f"{age*1000:.0f}ms")
+        # print(f"{vx=},{vy=}")
+        # print((x,y,z))
         center = (
             x,
             y,
         )
-        radius = 50
-        pygame.draw.circle(screen, RED, center, radius)
+        radius = 12
+        pygame.draw.circle(screen, (100,50,50), center, radius)
+        predicted = (
+            x + (vx * age),
+            y + (vy * age),
+        )
+        # print(f"{vx=}")
+        # print(f"{ball.vel.x=}")
+        radius = 25
+        pygame.draw.circle(screen, (180,25,25), predicted, radius)
 
     # Update the display
     pygame.display.flip()
     end = epoch()
-    asyncio.run(update())
+    # asyncio.run(update())
     if (epoch() - stamp) * 1000 > update_interval:
         elapsed = end - start
-        print(f"{1 / elapsed:6.0f} fps")
+        # print(f"{1 / elapsed:6.0f} fps")

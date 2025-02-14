@@ -1,85 +1,66 @@
+#!/home/logan/server/.venv/bin/python
 #!/usr/bin/python3
 from time import sleep
-from pickle import dumps as serialize
-from pickle import loads as deserialize
-import ssl
-
-# n = 0
-# while True:
-#     print(f"hello #{n}")
-#     sleep(1)
-#     n+=1
-
-
-# an entry per connection
-# worldstate = ["deadbeef"]*10
-worldstate = []
-
+import msgpack
 import socket
-from _thread import start_new_thread
-import sys
+import threading
 
-# server = "47.155.218.95"
-server = ""
-port = 5002
-
-# context = ssl.create_default_context()
-context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
-context.load_cert_chain(
-    certfile="/home/logan/certs/rootCA.pem", keyfile="/home/logan/certs/rootCA.key"
-)
+sleep_ms = lambda x: sleep(x / 1000)
 
 
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
-# s = socket.create_connection((server, port))
-s = context.wrap_socket(s, server_side=True)
-print("attempting bind:")
-try:
-    s.bind((server, port))
-    print("socket bound successfully")
-except socket.error as message:
-    print("Bind failed. Error Code : " + str(message))
-    sys.exit()
+# one thread per client, in addition to one for the receiver?
+worldstate = {}
 
 
-s.listen()
-
-
-def threaded_client(conn, connection_id):
-    global worldstate
-    # this is sent upon connection
-
-    conn.send(serialize(connection_id))
+def sender():
+    # UDP_IP = "127.0.0.1"
+    # UDP_IP = "192.168.4.95"
+    UDP_IP = "127.0.0.1"
+    UDP_PORT = 5003
+    sender_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # Internet  # UDP
+    n = 0
     while True:
-        try:
-            data = deserialize(conn.recv(2048))
-            print(f"received {data}")
-            if not data:
-                print("disconnected")
-                break
-            else:  # here is everything is good
-                print(f"received and verified: {data} for ID:{connection_id}")
-                print("updating worldstate...")
-                try:
-                    worldstate[connection_id] = data
-                except:
-                    worldstate.append(data)
-                print(f"world updated")
-                reply = worldstate
-                print(f"responding with {reply}")
+        # packet = {"type": "unspecified", "data": n}
+        packet = worldstate
+        MESSAGE = msgpack.packb(packet)
+        sender_socket.sendto(MESSAGE, (UDP_IP, UDP_PORT))
+        # print(f"sent {packet}")
+        n += 1
 
-            conn.sendall(serialize(reply))
-        except:
-            break
-    conn.close()
+        # print("waiting for incoming...")
+        # data, addr = sock.recvfrom(1024)
+        # data = msgpack.unpackb(data)
+        # print(data)
+
+        sleep_ms(1000)
 
 
-connection_id = 0
-while True:
-    print(f"listening on {port}")
-    conn, addr = s.accept()
-    print(f"connected to {addr}, assigned ID {connection_id}")
-    start_new_thread(threaded_client, (conn, connection_id))
-    connection_id += 1
+# 5002 is for client to server
+def receiver():
+    global worldstate
+    UDP_IP = "127.0.0.1"
+    UDP_PORT = 5002
+    receiver_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # Internet  # UDP
+    receiver_sock.bind((UDP_IP, 5002))
+    while True:
+        # print("listening...")
+        data, address = receiver_sock.recvfrom(1024)
+        data = msgpack.unpackb(data)
+        print(f"received: {data}")
+        if data["type"] == "player_state":
+            worldstate[data["id"]] = {
+                "address": address,
+                "player_state": data["player_state"],
+                "timestamp": data["timestamp"],
+            }
+        if data["type"] == "connection_request":
+            pass
+
+
+if __name__ == "__main__":
+    sender_thread = threading.Thread(target=sender, args=())
+    sender_thread.start()
+
+    receiver_thread = threading.Thread(target=receiver, args=())
+    receiver_thread.start()
+    print("I am here now")
