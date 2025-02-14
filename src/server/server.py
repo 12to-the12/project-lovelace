@@ -14,14 +14,15 @@ worldstate = {}
 
 def sender():
     # UDP_IP = "127.0.0.1"
-    # UDP_IP = "192.168.4.95"
-    UDP_IP = "127.0.0.1"
+    UDP_IP = "192.168.4.95"
+    # UDP_IP = "127.0.0.1"
     UDP_PORT = 5003
     sender_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # Internet  # UDP
     n = 0
     while True:
         # packet = {"type": "unspecified", "data": n}
         packet = worldstate
+
         MESSAGE = msgpack.packb(packet)
         sender_socket.sendto(MESSAGE, (UDP_IP, UDP_PORT))
         # print(f"sent {packet}")
@@ -32,21 +33,21 @@ def sender():
         # data = msgpack.unpackb(data)
         # print(data)
 
-        sleep_ms(1000)
+        sleep_ms(100)
 
 
 # 5002 is for client to server
 def receiver():
     global worldstate
-    UDP_IP = "127.0.0.1"
+    MY_IP = "192.168.4.107"
     UDP_PORT = 5002
     receiver_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # Internet  # UDP
-    receiver_sock.bind((UDP_IP, 5002))
+    receiver_sock.bind((MY_IP, 5002))
     while True:
         # print("listening...")
         data, address = receiver_sock.recvfrom(1024)
         data = msgpack.unpackb(data)
-        print(f"received: {data}")
+        # print(f"received: {data}")
         if data["type"] == "player_state":
             worldstate[data["id"]] = {
                 "address": address,

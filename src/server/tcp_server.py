@@ -8,6 +8,7 @@ import msgpack
 
 import socket
 import threading
+
 # an entry per connection
 # worldstate = ["deadbeef"]*10
 worldstate = []

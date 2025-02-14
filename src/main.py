@@ -45,7 +45,7 @@ class spatial_object:
         timestamp = epoch()
         elapsed = timestamp - self.last_updated
         self.last_updated = timestamp
-        print(f"ball apply elapsed: {elapsed}")
+
         self.vel.x += self.acc.x * elapsed
         self.vel.y += self.acc.y * elapsed
         self.vel.z += self.acc.z * elapsed
@@ -54,16 +54,18 @@ class spatial_object:
         self.pos.y += self.vel.y * elapsed
         self.pos.z += self.vel.z * elapsed
 
-        # self.vel.x *= 0.9999**elapsed
-        # self.vel.y *= 0.9999**elapsed
-        # self.vel.z *= 0.9999**elapsed
+        self.pos.x
+
+        self.vel.x *= 0.9999**elapsed
+        self.vel.y *= 0.9999**elapsed
+        self.vel.z *= 0.9999**elapsed
 
 
 # Initialize Pygame
 pygame.init()
 update_interval = 20  # ms
 # Set up display
-width, height = 800, 600
+width, height = 1500, 1000
 # screen = pygame.display.set_mode((width, height))
 
 screen = pygame.display.set_mode((width, height), pygame.HWSURFACE | pygame.DOUBLEBUF)
@@ -126,6 +128,7 @@ def read_world():
     global worldstate
     while True:
         worldstate = network.udp_scan()
+        # print(f"{worldstate=}")
         # print(worldstate)
 
 
@@ -146,7 +149,7 @@ def send_position():
         sleep_ms(10)
 
 
-acc = 1e2
+acc = 1e3
 
 send_position_thread = threading.Thread(target=send_position)
 send_position_thread.start()
@@ -224,7 +227,7 @@ while True:
         # height // 2 + y / 1000,
     )  # Center of the screen
     radius = 50
-    pygame.draw.circle(screen, RED, center, radius)
+    pygame.draw.circle(screen, (255, 56, 0), center, radius)
     # Draw a ciK_LEFTrcle
     # if worldstate:
     #     print(worldstate)
@@ -237,12 +240,7 @@ while True:
         # print(f"{age*1000:.0f}ms")
         # print(f"{vx=},{vy=}")
         # print((x,y,z))
-        center = (
-            x,
-            y,
-        )
-        radius = 12
-        pygame.draw.circle(screen, (100,50,50), center, radius)
+
         predicted = (
             x + (vx * age),
             y + (vy * age),
@@ -250,7 +248,14 @@ while True:
         # print(f"{vx=}")
         # print(f"{ball.vel.x=}")
         radius = 25
-        pygame.draw.circle(screen, (180,25,25), predicted, radius)
+        pygame.draw.circle(screen, (255, 187, 0), predicted, radius)
+
+        center = (
+            x,
+            y,
+        )
+        radius = 12
+        pygame.draw.circle(screen, (221, 246, 255), center, radius)
 
     # Update the display
     pygame.display.flip()

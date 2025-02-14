@@ -12,8 +12,8 @@ from time import sleep
 
 class Frenship:
     def __init__(self):
-        # self.server = "lovelace.loganhillyer.me"
-        self.server = "127.0.0.1"
+        self.server_address = "lovelace.loganhillyer.me"
+        # self.server_address = "192.168.4.107"
 
         # self.init_tcp()
         self.init_udp()
@@ -31,9 +31,11 @@ class Frenship:
 
         self.port = 5002
 
-        self.addr = (self.server, self.port)
+        self.addr = (self.server_address, self.port)
         # self.socket = socket.create_connection(self.addr)
-        self.tcp_sock = context.wrap_socket(self.tcp_sock, server_hostname=self.server)
+        self.tcp_sock = context.wrap_socket(
+            self.tcp_sock, server_hostname=self.server_address
+        )
 
         self.connection_id = self.tcp_connect()
         # print("connection successful ")
@@ -60,9 +62,9 @@ class Frenship:
 
     def init_udp(self):
         # IP = "47.155.218.95"
-        # UDP_IP = "192.168.4.107"
         # UDP_IP = "192.168.4.95"
-        UDP_IP = "127.0.0.1"
+        # UDP_IP = "127.0.0.1"
+        MY_IP = "192.168.4.95"
         # UDP_PORT = 5003
         self.SERVER_TO_CLIENT_PORT = 5003
         self.CLIENT_TO_SERVER_PORT = 5002
@@ -70,7 +72,7 @@ class Frenship:
         self.downstream = socket.socket(
             socket.AF_INET, socket.SOCK_DGRAM
         )  # Internet  # UDP
-        self.downstream.bind((UDP_IP, self.SERVER_TO_CLIENT_PORT))
+        self.downstream.bind((MY_IP, self.SERVER_TO_CLIENT_PORT))
 
         self.upstream = socket.socket(
             socket.AF_INET, socket.SOCK_DGRAM
@@ -79,9 +81,9 @@ class Frenship:
 
     def udp_scan(self):
         data, addr = self.downstream.recvfrom(1024)
-        data = msgpack.unpackb(data,strict_map_key=False)
+        data = msgpack.unpackb(data, strict_map_key=False)
         return data
 
     def udp_send(self, data):
         data = msgpack.packb(data)
-        self.upstream.sendto(data, (self.server, self.CLIENT_TO_SERVER_PORT))
+        self.upstream.sendto(data, (self.server_address, self.CLIENT_TO_SERVER_PORT))
