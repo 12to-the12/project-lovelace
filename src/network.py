@@ -2,6 +2,7 @@ import socket
 
 # from ssl import SSLSocket as socket
 import ssl
+from time import sleep
 
 # import pickle
 from pickle import dumps as serialize
@@ -29,10 +30,9 @@ class Network:
 
         self.connection_id = self.connect()
         # print("connection successful ")
-        print(f"response: {self.connection_id}")
+        print(f"assigned connection ID: {self.connection_id}")
 
     def connect(self):
-
         try:
             print("attempting connection...")
             self.socket.connect(self.addr)
@@ -43,7 +43,9 @@ class Network:
 
     def send(self, data):
         try:
+            # print("sending data...")
             self.socket.send(serialize(data))
+            # print("data sent\nreceiving world state...")
             return deserialize(self.socket.recv(2048))
         except socket.error as e:
             print(e)

@@ -5,8 +5,16 @@ include .env
 default: all
 all: start-server install run
 
-install:
+format:
+	ruff format
+
+check:
+	ruff check
+
+install: format
 	setup 3.12 uv
+	.venv/bin/python src/main.py
+
 
 run:
 	.venv/bin/python src/main.py

@@ -1,5 +1,6 @@
 import pygame
 import sys
+import asyncio
 
 pygame.display.set_caption("CLIENT")
 
@@ -35,10 +36,16 @@ class spatial_object:
 
 # Initialize Pygame
 pygame.init()
-
+update_interval = 20  # ms
 # Set up display
 width, height = 800, 600
-screen = pygame.display.set_mode((width, height))
+# screen = pygame.display.set_mode((width, height))
+
+screen = pygame.display.set_mode((width, height), pygame.HWSURFACE | pygame.DOUBLEBUF)
+surface = pygame.Surface((width, height), pygame.HWSURFACE | pygame.DOUBLEBUF)
+print(pygame.display.get_driver())
+print(pygame.display.get_surface())
+
 pygame.display.set_caption("Draw a Circle")
 
 # Define colors
@@ -66,11 +73,22 @@ from time import sleep
 stamp = epoch()
 # Main loop
 
-worldstate=[]
-while True:
-    if (epoch() - stamp)*1000 > 100:
+awaiting = None
+
+
+async def fetch_worldstate():
+    global worldstate
+    worldstate = network.send((ball.pos.x, ball.pos.y, ball.pos.z))
+
+
+async def update():
+    global stamp, awaiting
+    if (epoch() - stamp) * 1000 > update_interval:
+        if awaiting:
+            await awaiting
+        awaiting = asyncio.create_task(fetch_worldstate())
+        # await awaiting
         stamp = epoch()
-        worldstate = network.send((ball.pos.x,ball.pos.y,ball.pos.z))
         if worldstate:
             # print(worldstate)
             pass
@@ -78,6 +96,14 @@ while True:
             print("error connecting")
         # print(worldstate)
 
+
+ball.pos.x = width // 2
+ball.pos.y = height // 2
+worldstate = []
+# asyncio.run(fetch_worldstate())
+while True:
+    start = epoch()
+    asyncio.run(update())
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.display.quit()
@@ -85,23 +111,22 @@ while True:
             sys.exit()
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT:
-                ball.acc.x = -1
+                left = True
             if event.key == pygame.K_RIGHT:
-                ball.acc.x = 1
+                right = True
             if event.key == pygame.K_UP:
-                ball.acc.y = -1
+                up = True
             if event.key == pygame.K_DOWN:
-                ball.acc.y = 1
+                down = True
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_LEFT:
-                ball.acc.x = 0
+                left = False
             if event.key == pygame.K_RIGHT:
-                ball.acc.x = 0
+                right = False
             if event.key == pygame.K_UP:
-                ball.acc.y = 0
+                up = False
             if event.key == pygame.K_DOWN:
-                ball.acc.y = 0
-
+                down = False
     # Fill the background
     screen.fill(BLACK)
     # if right:
@@ -112,17 +137,45 @@ while True:
     #     ball.acc.y = 1
     # if down:
     #     ball.acc.y = 1
+    if right:
+        ball.acc.x = 1e-3
+    if left:
+        ball.acc.x = -1e-3
+    if right and left:
+        ball.acc.x = 0
+    if (not right) and (not left):
+        ball.acc.x = 0
+    if down:
+        ball.acc.y = 1e-3
+    if up:
+        ball.acc.y = -1e-3
+    if down and up:
+        ball.acc.y = 0
+    if (not up) and (not down):
+        ball.acc.y = 0
     ball.apply()
+
+    center = (
+        ball.pos.x,
+        ball.pos.y,
+        # width // 2 + x / 1000,
+        # height // 2 + y / 1000,
+    )  # Center of the screen
+    radius = 50
+    pygame.draw.circle(screen, RED, center, radius)
     # Draw a ciK_LEFTrcle
-    for (x,y,z) in worldstate:
+    for x, y, z in worldstate:
         center = (
-            #           width // 2 + ball.pos.x / 1000,
-            # height // 2 + ball.pos.y / 1000,
-            width // 2 + x / 1000,
-            height // 2 + y / 1000,
-        )  # Center of the screen
+            x,
+            y,
+        )
         radius = 50
         pygame.draw.circle(screen, RED, center, radius)
 
     # Update the display
     pygame.display.flip()
+    end = epoch()
+    asyncio.run(update())
+    if (epoch() - stamp) * 1000 > update_interval:
+        elapsed = end - start
+        print(f"{1 / elapsed:6.0f} fps")

@@ -25,14 +25,16 @@ port = 5002
 
 # context = ssl.create_default_context()
 context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
-context.load_cert_chain(certfile="/home/logan/certs/rootCA.pem", keyfile="/home/logan/certs/rootCA.key")
+context.load_cert_chain(
+    certfile="/home/logan/certs/rootCA.pem", keyfile="/home/logan/certs/rootCA.key"
+)
 
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 # s = socket.create_connection((server, port))
-s = context.wrap_socket(s,server_side=True)
+s = context.wrap_socket(s, server_side=True)
 print("attempting bind:")
 try:
     s.bind((server, port))
@@ -48,9 +50,9 @@ s.listen()
 def threaded_client(conn, connection_id):
     global worldstate
     # this is sent upon connection
+
     conn.send(serialize(connection_id))
     while True:
-
         try:
             data = deserialize(conn.recv(2048))
             print(f"received {data}")
