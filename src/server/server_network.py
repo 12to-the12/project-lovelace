@@ -29,7 +29,7 @@ class network:
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
+        self.sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, True)
         self.sock = self.context.wrap_socket(self.sock, server_side=True)
         print("attempting bind:")
         try:

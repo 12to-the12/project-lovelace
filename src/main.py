@@ -123,13 +123,13 @@ while True:
 
         # timestamp = player["timestamp"]
 
-        # last_age = epoch() - last_timestamp - temporal_adjustment
+        last_age = epoch() - last_timestamp  # - temporal_adjustment
         # if last_age<0:
         moved = (
             lastball.pos.x + (lastball.vel.x * last_age),
             lastball.pos.y + (lastball.vel.y * last_age),
         )
-        
+
         radius = 30 * 0.9**last_age
         pygame.draw.circle(screen, (255, 187, 0), moved, radius)
 
@@ -154,12 +154,12 @@ while True:
         # radius = 30 * 0.9**age
         # pygame.draw.circle(screen, (255, 187, 0), moved, radius)
 
-        # static = (
-        #     myball.pos.x,
-        #     myball.pos.y,
-        # )
-        # radius = 25 * 0.5**age
-        # pygame.draw.circle(screen, (221, 246, 255), static, radius)
+        static = (
+            lastball.pos.x,
+            lastball.pos.y,
+        )
+        radius = 25 * 0.5**last_age
+        pygame.draw.circle(screen, (221, 246, 255), static, radius)
 
     # Update the display
     pygame.display.flip()
