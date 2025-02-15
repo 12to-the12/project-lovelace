@@ -4,7 +4,7 @@ from time import sleep
 import msgpack
 import socket
 import threading
-from network import TCPNetwork
+from server_network import network
 
 sleep_ms = lambda x: sleep(x / 1000)
 
@@ -80,12 +80,12 @@ def receiver():
 if __name__ == "__main__":
     # while True:
     #     conn, addr = sock.accept
-    network = TCPNetwork()
-    network.await_connections()
+    network = network()
+    # network.await_connections()
 
     # sender_thread = threading.Thread(target=sender, args=())
     # sender_thread.start()
 
     # receiver_thread = threading.Thread(target=receiver, args=())
     # receiver_thread.start()
-    # print("I am here now")
+    print("I am here now")

@@ -49,7 +49,7 @@ class Frenship:
             print("attempting connection...")
             self.tcp_sock.connect((self.server_address, self.port))
             print("connection successful")
-            return deserialize(self.tcp_sock.recv(2048))
+            return deserialize(self.tcp_sock.recv(2048), strict_map_key=False)
         except:
             print("connection failed")
             pass
@@ -58,15 +58,14 @@ class Frenship:
         try:
             # print("sending data...")
             self.tcp_sock.send(serialize(data))
-            # print("data sent\nreceiving world state...")
-            return deserialize(self.tcp_sock.recv(2048))
+            # print("data sent")
         except socket.error as e:
             print(e)
             return None
 
     def tcp_scan(self):
         data = self.tcp_sock.recv(2048)
-        packet = deserialize(data)
+        packet = deserialize(data, strict_map_key=False)
         return packet
 
     def init_udp(self):

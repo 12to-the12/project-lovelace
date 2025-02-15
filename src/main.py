@@ -13,17 +13,6 @@ from time import time as epoch
 from time import sleep
 
 
-while True:
-    # print("polling")
-    packet = network.tcp_scan()
-    print(f"received: {packet}")
-    # MESSAGE = "henlo"
-    # print(f"sending... <{MESSAGE}>")
-    # # network.udp_send(MESSAGE)
-
-
-quit()
-
 pygame.display.set_caption("CLIENT")
 
 
@@ -59,9 +48,9 @@ class spatial_object:
 
         self.pos.x
 
-        self.vel.x *= 0.9999**elapsed
-        self.vel.y *= 0.9999**elapsed
-        self.vel.z *= 0.9999**elapsed
+        self.vel.x *= 0.999**elapsed
+        self.vel.y *= 0.999**elapsed
+        self.vel.z *= 0.999**elapsed
 
 
 # Initialize Pygame
@@ -130,9 +119,14 @@ worldstate = {}
 def read_world():
     global worldstate
     while True:
-        worldstate = network.tcp_scan()
+        # print("listening...")
+        packet = network.tcp_scan()
+        # print(f"packet received: {packet}")
+        if packet["type"] == "worldstate":
+            worldstate = packet["worldstate"]
         # print(f"{worldstate=}")
         # print(worldstate)
+        sleep_ms(10)
 
 
 def send_position():
@@ -148,6 +142,7 @@ def send_position():
             "timestamp": epoch(),
         }
         # print(packet)
+        # print("sending position")
         network.tcp_send(packet)
         sleep_ms(10)
 
@@ -186,6 +181,12 @@ send_position_thread.start()
 
 read_worldstate_thread = threading.Thread(target=read_world)
 read_worldstate_thread.start()
+
+while worldstate == {}:
+    print("not present")
+    print(worldstate)
+    sleep_ms(1000)
+print(worldstate)
 
 
 while True:
@@ -255,11 +256,12 @@ while True:
     # Draw a ciK_LEFTrcle
     # if worldstate:
     #     print(worldstate)
-    for ID in worldstate.keys():
+
+    for ID in worldstate["players"].keys():
         # print(type(worldstate[ID]))
-        x, y, z = worldstate[ID]["player_state"]["position"]
-        vx, vy, vz = worldstate[ID]["player_state"]["velocity"]
-        timestamp = worldstate[ID]["timestamp"]
+        x, y, z = worldstate["players"][ID]["player_state"]["position"]
+        vx, vy, vz = worldstate["players"][ID]["player_state"]["velocity"]
+        timestamp = worldstate["players"][ID]["timestamp"]
         age = epoch() - timestamp
         # print(f"{age*1000:.0f}ms")
         # print(f"{vx=},{vy=}")

@@ -38,7 +38,7 @@ push-server: stop-server
 	rsync -avzch ./src/server/ services:~/server/
 
 start-server: push-server
-	ssh services "tmux new-session -d -s 'server' ./server/server.py"
+	ssh services "tmux new-session -d -s 'server' ./server/server_main.py"
 	ssh services "tmux ls"
 environment-install:
 	wine ${wPython}/python.exe ${wPython}/Scripts/pip.exe install -r requirements.txt
