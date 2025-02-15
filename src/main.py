@@ -58,8 +58,8 @@ awaiting = None
 
 
 clock = Clock()
-ball.pos.x = width // 2
-ball.pos.y = height // 2
+# ball.pos.x = width // 2
+# ball.pos.y = height // 2
 
 while frenship.worldstate == {}:
     # print("not present")

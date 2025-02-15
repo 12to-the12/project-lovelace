@@ -1,4 +1,7 @@
 from time import time as epoch
+from random import uniform
+
+dist = lambda x: uniform(-x, x)
 
 
 class SpatialVector:
@@ -11,11 +14,19 @@ class SpatialVector:
 class SpatialObject:
     def __init__(
         self,
-        pos=SpatialVector(),
-        vel=SpatialVector(),
-        acc=SpatialVector(),
+        pos=None,
+        vel=None,
+        acc=None,
         bounds=(1500, 1000),
     ):
+        self.width, self.height = bounds
+        factor = 1e2
+        if not pos:
+            pos = SpatialVector(uniform(0, self.width), uniform(0, self.height), 0)
+        if not vel:
+            vel = SpatialVector(dist(factor), dist(factor))
+        if not acc:
+            acc = SpatialVector(dist(factor), dist(factor))
         self.pos = pos
         self.vel = vel
         self.acc = acc
@@ -24,7 +35,6 @@ class SpatialObject:
         # assert (type(self.acc.x) == int) or (type(self.acc.x) == float), type(
         #     self.acc.x
         # )
-        self.width, self.height = bounds
 
         self.last_updated = epoch()
 
@@ -104,5 +114,3 @@ def build_ball(state):
 
 
 ball = SpatialObject()
-ball.pos.x = 5
-ball.pos.y = 5
