@@ -75,6 +75,27 @@ class SpatialObject:
         self.apply()
 
 
+def mix(a, a_weight, b, b_weight):
+    a = build_ball(a)
+    b = build_ball(b)
+    pos = SpatialVector(
+        a.pos.x * a_weight + b.pos.x * b_weight,
+        a.pos.y * a_weight + b.pos.y * b_weight,
+        a.pos.z * a_weight + b.pos.z * b_weight,
+    )
+    vel = SpatialVector(
+        a.vel.x * a_weight + b.vel.x * b_weight,
+        a.vel.y * a_weight + b.vel.y * b_weight,
+        a.vel.z * a_weight + b.vel.z * b_weight,
+    )
+    acc = SpatialVector(
+        a.acc.x * a_weight + b.acc.x * b_weight,
+        a.acc.y * a_weight + b.acc.y * b_weight,
+        a.acc.z * a_weight + b.acc.z * b_weight,
+    )
+    return SpatialObject(pos=pos, vel=vel, acc=acc)
+
+
 def build_ball(state):
     pos = state["position"]
     vec = state["velocity"]

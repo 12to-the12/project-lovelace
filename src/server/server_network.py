@@ -19,6 +19,8 @@ class network:
         self.receiving_connections = []
         self.incoming_addr = ""
         self.port = 5002
+        self.snapshot_interval_ms = 100  # ms
+        self.snapshot_buffer_size = 10
         # context = ssl.create_default_context()
 
         self.context = ssl.SSLContext(ssl.PROTOCOL_TLS)
@@ -71,11 +73,13 @@ class network:
                 print(e)
                 sock.close()
                 break
-            sleep_ms(50)
+            sleep_ms(self.snapshot_interval_ms)
 
     def receiving(self, sock, connection_id):
         global worldstate
-        worldstate["players"][connection_id] = {"player_state": {"buffer": []}}
+        worldstate["players"][connection_id] = {
+            "player_state": {"buffer": [], "snapshots": {}}
+        }
         # sock.send(serialize(connection_id))
         while True:
             try:
@@ -90,17 +94,12 @@ class network:
                 # try:
                 if packet["type"] == "player_state":
                     player_state = worldstate["players"][connection_id]["player_state"]
-                    # if player_state.get("new"):
-                    #     player_state["old"] = player_state["new"]
-                    player_state["buffer"].insert(
-                        0,
-                        {
-                            "timestamp": packet["timestamp"],
-                            "state": packet["player_state"],
-                        },
-                    )
-                    if len(player_state["buffer"]) > 5:
-                        player_state["buffer"].pop()
+                    timestamp = packet["timestamp"]
+                    player_state["snapshots"][timestamp] = packet["player_state"]
+                    player_state["buffer"].insert(0, timestamp)
+                    if len(player_state["buffer"]) > self.snapshot_buffer_size:
+                        stamptodelete = player_state["buffer"].pop()
+                        del player_state["snapshots"][stamptodelete]
 
                 # except Exception as e:
                 #     print("error, couldn't add snapshot")

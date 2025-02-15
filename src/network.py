@@ -19,6 +19,8 @@ import threading
 
 class Frenship:
     def __init__(self):
+        self.snapshot_interval_ms = 50  # ms
+
         self.worldstate = {}
         # worldstate["this is apossible alernativet"] = "2"
 
@@ -78,7 +80,7 @@ class Frenship:
             # print(packet)
             # print("sending position")
             self.tcp_send(packet)
-            sleep_ms(1)
+            sleep_ms(self.snapshot_interval_ms)
 
     def init_tcp(self):
         # context = ssl.create_default_context()

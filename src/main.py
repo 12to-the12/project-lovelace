@@ -7,7 +7,7 @@ import asyncio
 import msgpack
 import threading
 from server import worldstate
-from spatial import SpatialVector, ball, SpatialObject, build_ball
+from spatial import SpatialVector, ball, SpatialObject, build_ball, mix
 from network import Frenship
 
 from pygame.time import Clock
@@ -107,35 +107,105 @@ while True:
     # if worldstate:
     #     print(worldstate)
 
-    temporal_adjustment = 50 / 1000  # run remote on 50ms lag
+    temporal_adjustment = 200 / 1000  # run remote on 50ms lag
     for ID in frenship.worldstate["players"].keys():
         # if ID == frenship.connection_id:
         #     continue
-        snapshots = frenship.worldstate["players"][ID]["player_state"]["buffer"]
+
+        buffer = frenship.worldstate["players"][ID]["player_state"]["buffer"]
+        if buffer == []:
+            continue
+        snapshots = frenship.worldstate["players"][ID]["player_state"]["snapshots"]
 
         # timestamps = sorted(snapshots.keys())
-        last_timestamp = snapshots[0]["timestamp"]
-        last = snapshots[0]["state"]
+        last_timestamp = buffer[0]
+        last = snapshots[buffer[0]]
 
-        oldest_timestamp = snapshots[-1]["timestamp"]
+        oldest_timestamp = buffer[-1]
         lastball = build_ball(last)
         # print(type(worldstate[ID]))
 
         # timestamp = player["timestamp"]
+        real_last_age = epoch() - last_timestamp
+        last_age = epoch() - last_timestamp - temporal_adjustment
+        oldest_age = epoch() - oldest_timestamp - temporal_adjustment
 
-        last_age = epoch() - last_timestamp  # - temporal_adjustment
-        # if last_age<0:
-        moved = (
-            lastball.pos.x + (lastball.vel.x * last_age),
-            lastball.pos.y + (lastball.vel.y * last_age),
-        )
+        # this is interpolation
+        # we need the one before and the one after
+        # print(buffer)
+        # print(f"last age: {last_age * 1000:.0f}ms")
+        # print(f"oldest age: {oldest_age * 1000:.0f}ms")
+        if last_age < 0 and oldest_age > 0:
+            target_time = epoch() - temporal_adjustment
+            # print(f"{target_time=}")
+            after_candidate = 1e20
+            before_candidate = 0
+            for timestamp in buffer:
+                # if before target and right before
+                if timestamp < target_time:
+                    if timestamp > before_candidate:
+                        # print(f"the timestamp {timestamp} might be right before")
+                        before_candidate = timestamp
 
-        radius = 30 * 0.9**last_age
-        pygame.draw.circle(screen, (255, 187, 0), moved, radius)
+                # if after target and right after
+
+                if timestamp > target_time:
+                    if timestamp < after_candidate:
+                        # print(f"the timestamp {timestamp} might be right after")
+                        after_candidate = timestamp
+            # print(before_candidate)
+            if before_candidate == 0:
+                print("no before candidate found")
+                print("this is a race condition")
+                continue
+            if after_candidate == 1e20:
+                print("no after candidate found")
+                print("this is a race condition")
+                continue
+            before_delta = target_time - before_candidate
+            after_delta = after_candidate - target_time
+            span = after_delta + before_delta
+            if span != 0:
+                before_weight = after_delta / span
+                after_weight = before_delta / span
+                before = snapshots[before_candidate]
+                after = snapshots[after_candidate]
+                mixedball = mix(before, before_weight, after, after_weight)
+                moved = (mixedball.pos.x, mixedball.pos.y)
+            else:
+                myball = build_ball(snapshots[before_candidate])
+                moved = (myball.pos.x, myball.pos.y)
+            radius = 40 * 0.8**last_age
+            pygame.draw.circle(screen, (255, 126, 0), moved, radius)
+        # transmitting too fast without enough values in the buffer
+        elif oldest_age < 0:
+            print("the oldest snapshot on record is more recent than our target time ")
+            # quit()
+        # past extrapolation
+        # the last age is older than the target
+        elif last_age > 0:
+            # lastball = build_ball(snapshots[last_age])
+            moved = (
+                lastball.pos.x + (lastball.vel.x * last_age),
+                lastball.pos.y + (lastball.vel.y * last_age),
+            )
+
+            radius = 40 * 0.8**last_age
+            pygame.draw.circle(screen, (0, 255, 0), moved, radius)
+        # future extrapolation?
+        else:
+            moved = (
+                lastball.pos.x + (lastball.vel.x * last_age),
+                lastball.pos.y + (lastball.vel.y * last_age),
+            )
+
+            radius = 40 * 0.8**last_age
+            pygame.draw.circle(screen, (255, 255, 255), moved, radius)
 
         if (epoch() - stamp) * 1000 > update_interval:
             stamp = epoch()
-            print(f"last snapshot age against rewind:  {last_age * 1000:.0f}ms")
+            print(f"last age: {last_age * 1000:.0f}ms")
+            print(f"oldest age: {oldest_age * 1000:.0f}ms")
             # print(snapshots)
             # print("\n\n\n\n")
 
@@ -147,19 +217,19 @@ while True:
 
         # pygame.draw.circle(screen, (255, 100, 0), accelerated, radius)
 
-        # moved = (
-        #     myball.pos.x + (myball.vel.x * age),
-        #     myball.pos.y + (myball.vel.y * age),
-        # )
-        # radius = 30 * 0.9**age
-        # pygame.draw.circle(screen, (255, 187, 0), moved, radius)
+        moved = (
+            lastball.pos.x + (lastball.vel.x * real_last_age),
+            lastball.pos.y + (lastball.vel.y * real_last_age),
+        )
+        radius = 30 * 0.7**real_last_age
+        pygame.draw.circle(screen, (255, 209, 63), moved, radius)
 
         static = (
             lastball.pos.x,
             lastball.pos.y,
         )
-        radius = 25 * 0.5**last_age
-        pygame.draw.circle(screen, (221, 246, 255), static, radius)
+        radius = 20 * 0.5**real_last_age
+        pygame.draw.circle(screen, (245, 243, 255), static, radius)
 
     # Update the display
     pygame.display.flip()
