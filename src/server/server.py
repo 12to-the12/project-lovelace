@@ -4,8 +4,17 @@ from time import sleep
 import msgpack
 import socket
 import threading
+from network import TCPNetwork
 
 sleep_ms = lambda x: sleep(x / 1000)
+
+nextclientid = -1
+
+
+def getnextclientid():
+    global nextclientid
+    nextclientid += 1
+    return nextclientid
 
 
 # one thread per client, in addition to one for the receiver?
@@ -33,7 +42,7 @@ def sender():
         # data = msgpack.unpackb(data)
         # print(data)
 
-        sleep_ms(100)
+        sleep_ms(1000)
 
 
 # 5002 is for client to server
@@ -45,7 +54,8 @@ def receiver():
     receiver_sock.bind((MY_IP, 5002))
     while True:
         # print("listening...")
-        data, address = receiver_sock.recvfrom(1024)
+        data, (address, port) = receiver_sock.recvfrom(1024)
+        print(f"message received from {address} over port {port}")
         data = msgpack.unpackb(data)
         # print(f"received: {data}")
         if data["type"] == "player_state":
@@ -55,13 +65,27 @@ def receiver():
                 "timestamp": data["timestamp"],
             }
         if data["type"] == "connection_request":
-            pass
+            print("connection request received, assigning id")
+            sender_socket = socket.socket(
+                socket.AF_INET, socket.SOCK_DGRAM
+            )  # Internet  # UDP
+            packet = {"type": "id_assignment", "id": getnextclientid()}
+            MESSAGE = msgpack.packb(packet)
+            while True:
+                print(f"sending packet to {address}:{port}")
+                sender_socket.sendto(MESSAGE, (address, port))
+                sleep(1)
 
 
 if __name__ == "__main__":
-    sender_thread = threading.Thread(target=sender, args=())
-    sender_thread.start()
+    # while True:
+    #     conn, addr = sock.accept
+    network = TCPNetwork()
+    network.await_connections()
 
-    receiver_thread = threading.Thread(target=receiver, args=())
-    receiver_thread.start()
-    print("I am here now")
+    # sender_thread = threading.Thread(target=sender, args=())
+    # sender_thread.start()
+
+    # receiver_thread = threading.Thread(target=receiver, args=())
+    # receiver_thread.start()
+    # print("I am here now")

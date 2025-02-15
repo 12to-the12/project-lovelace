@@ -53,8 +53,6 @@ from _thread import start_new_thread
 import sys
 
 # server = "47.155.218.95"
-server = ""
-port = 5002
 
 # context = ssl.create_default_context()
 context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)

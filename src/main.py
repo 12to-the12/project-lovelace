@@ -12,14 +12,17 @@ network = Frenship()
 from time import time as epoch
 from time import sleep
 
-# while True:
-#     # print("polling")
-#     data = network.udp_scan()
-#     print(f"received: {data["data"]}")
-#     MESSAGE = "henlo"
-#     print(f"sending... <{MESSAGE}>")
-#     # network.udp_send(MESSAGE)
 
+while True:
+    # print("polling")
+    packet = network.tcp_scan()
+    print(f"received: {packet}")
+    # MESSAGE = "henlo"
+    # print(f"sending... <{MESSAGE}>")
+    # # network.udp_send(MESSAGE)
+
+
+quit()
 
 pygame.display.set_caption("CLIENT")
 
@@ -127,7 +130,7 @@ worldstate = {}
 def read_world():
     global worldstate
     while True:
-        worldstate = network.udp_scan()
+        worldstate = network.tcp_scan()
         # print(f"{worldstate=}")
         # print(worldstate)
 
@@ -145,11 +148,37 @@ def send_position():
             "timestamp": epoch(),
         }
         # print(packet)
-        network.udp_send(packet)
+        network.tcp_send(packet)
         sleep_ms(10)
 
 
 acc = 1e3
+
+
+from pygame.time import Clock
+
+clock = Clock()
+ball.pos.x = width // 2
+ball.pos.y = height // 2
+# asyncio.run(fetch_worldstate())
+
+# packet = {
+#     "type": "connection_request",
+#     "timestamp": epoch(),
+# }
+
+
+# network.udp_send(packet)
+
+
+# while True:
+#     print("waiting for id assignment...")
+#     packet = network.udp_scan()
+#     print(packet)
+#     if packet.get("type") == "id_assignment":
+#         ID = packet["id"]
+#         break
+
 
 send_position_thread = threading.Thread(target=send_position)
 send_position_thread.start()
@@ -158,12 +187,7 @@ send_position_thread.start()
 read_worldstate_thread = threading.Thread(target=read_world)
 read_worldstate_thread.start()
 
-from pygame.time import Clock
 
-clock = Clock()
-ball.pos.x = width // 2
-ball.pos.y = height // 2
-# asyncio.run(fetch_worldstate())
 while True:
     clock.tick(100)
     start = epoch()
@@ -247,14 +271,14 @@ while True:
         )
         # print(f"{vx=}")
         # print(f"{ball.vel.x=}")
-        radius = 25
+        radius = 50 * 0.9**age
         pygame.draw.circle(screen, (255, 187, 0), predicted, radius)
 
         center = (
             x,
             y,
         )
-        radius = 12
+        radius = 25 * 0.5**age
         pygame.draw.circle(screen, (221, 246, 255), center, radius)
 
     # Update the display
