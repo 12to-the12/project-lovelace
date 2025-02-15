@@ -42,7 +42,7 @@ def sender():
         # data = msgpack.unpackb(data)
         # print(data)
 
-        sleep_ms(1000)
+        sleep_ms(10)
 
 
 # 5002 is for client to server
@@ -74,7 +74,7 @@ def receiver():
             while True:
                 print(f"sending packet to {address}:{port}")
                 sender_socket.sendto(MESSAGE, (address, port))
-                sleep(1)
+                sleep_ms(10)
 
 
 if __name__ == "__main__":

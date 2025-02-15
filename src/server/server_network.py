@@ -18,8 +18,10 @@ def sending(sock, connection_id):
 
     while True:
         packet = {"type": "worldstate", "worldstate": worldstate, "timestamp": epoch()}
+        # packet = {"type": "epoch", "timestamp": epoch()}
+
         sock.sendall(serialize(packet))
-        sleep_ms(1000)
+        sleep_ms(1)
 
 
 def receiving(sock, connection_id):
@@ -39,7 +41,6 @@ def receiving(sock, connection_id):
                     "player_state": packet["player_state"],
                     "timestamp": packet["timestamp"],
                 }
-            sleep_ms(10)
 
         except Exception as e:
             print(e)

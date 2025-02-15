@@ -46,7 +46,8 @@ class spatial_object:
         self.pos.y += self.vel.y * elapsed
         self.pos.z += self.vel.z * elapsed
 
-        self.pos.x
+        self.pos.x %= width
+        self.pos.y %= height
 
         self.vel.x *= 0.999**elapsed
         self.vel.y *= 0.999**elapsed
@@ -116,7 +117,7 @@ awaiting = None
 worldstate = {}
 
 
-def read_world():
+def receiving():
     global worldstate
     while True:
         # print("listening...")
@@ -124,12 +125,18 @@ def read_world():
         # print(f"packet received: {packet}")
         if packet["type"] == "worldstate":
             worldstate = packet["worldstate"]
-        # print(f"{worldstate=}")
+
+        if packet["type"] == "epoch":
+            remote = packet["timestamp"]
+            local = epoch()
+            diff = local - remote
+            print(diff)
+        # print(f"worldstate updated")
         # print(worldstate)
-        sleep_ms(10)
+        # sleep_ms(100)
 
 
-def send_position():
+def sending():
     while True:
         packet = {
             "type": "player_state",
@@ -144,7 +151,7 @@ def send_position():
         # print(packet)
         # print("sending position")
         network.tcp_send(packet)
-        sleep_ms(10)
+        sleep_ms(1)
 
 
 acc = 1e3
@@ -175,11 +182,11 @@ ball.pos.y = height // 2
 #         break
 
 
-send_position_thread = threading.Thread(target=send_position)
+send_position_thread = threading.Thread(target=sending)
 send_position_thread.start()
 
 
-read_worldstate_thread = threading.Thread(target=read_world)
+read_worldstate_thread = threading.Thread(target=receiving)
 read_worldstate_thread.start()
 
 while worldstate == {}:
@@ -187,10 +194,10 @@ while worldstate == {}:
     print(worldstate)
     sleep_ms(1000)
 print(worldstate)
-
+print("starting gameloop")
 
 while True:
-    clock.tick(100)
+    # clock.tick(20)
     start = epoch()
     # asyncio.run(update())
     # ball.vel.x = 100
@@ -263,9 +270,7 @@ while True:
         vx, vy, vz = worldstate["players"][ID]["player_state"]["velocity"]
         timestamp = worldstate["players"][ID]["timestamp"]
         age = epoch() - timestamp
-        # print(f"{age*1000:.0f}ms")
-        # print(f"{vx=},{vy=}")
-        # print((x,y,z))
+        # print(f"{age * 1000:.0f}ms")
 
         predicted = (
             x + (vx * age),
