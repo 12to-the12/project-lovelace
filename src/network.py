@@ -20,7 +20,7 @@ import threading
 
 class Frenship:
     def __init__(self):
-        self.snapshot_interval_ms = 1  # ms
+        self.snapshot_interval_ms = 50  # ms
 
         self.worldstate = {}
         # worldstate["this is apossible alernativet"] = "2"
@@ -33,6 +33,67 @@ class Frenship:
         self.init_tcp()
         self.launch_streams()
         # self.init_udp()
+
+    def init_tcp(self):
+        # context = ssl.create_default_context()
+        #  context.load_cert_chain(certfile="cert.pem", keyfile="key.pem")
+
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+        context.load_verify_locations("rootCA.pem")
+
+        self.tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.tcp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
+        self.tcp_sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, True)
+        self.tcp_sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK, False)
+
+        self.server_port = 5002
+
+        # self.addr = (self.server_address, self.port)
+        # self.socket = socket.create_connection(self.addr)
+        self.tcp_sock = context.wrap_socket(
+            self.tcp_sock, server_hostname=self.server_address
+        )
+        # self.tcp_sock = self.socket
+
+        self.connection_id = self.tcp_connect()
+        # print("connection successful ")
+        print(f"assigned connection ID: {self.connection_id}")
+
+    def tcp_connect(self):
+        try:
+            print("attempting connection...")
+            self.tcp_sock.connect((self.server_address, self.server_port))
+            print("connection successful")
+            return deserialize(self.tcp_sock.recv(2048), strict_map_key=False)
+        except:
+            print("connection failed")
+            pass
+
+    def tcp_send(self, data):
+        try:
+            # print("sending data...")
+            self.tcp_sock.sendall(serialize(data))
+            # print("data sent")
+        except socket.error as e:
+            print(e)
+            return None
+
+    def tcp_scan(self):
+        # try:
+        data = self.tcp_sock.recv(2048 * 4)
+        try:
+            print(f"packet size received: {len(data)} bytes")
+            packet = deserialize(data, strict_map_key=False)
+            return packet
+        except Exception as e:
+            try:
+                for packet in msgpack.unpackb(data, strict_map_key=False):
+                    print(packet)
+                print(f"{e}")
+                print(data)
+            except:
+                print(f"{e}")
+                print(data)
 
     def launch_streams(self):
         global worldstate
@@ -79,11 +140,11 @@ class Frenship:
         # sleep_ms(100)
 
     def sending(self):
-        timing_pulse = Pulse(period=1)
+        timing_pulse = Pulse(period=(1000 / 1000))
         while True:
             if timing_pulse.read():
                 # send epoch packet
-                print("sending ping")
+                # print("sending ping")
                 packet = {
                     "type": "ping",
                     "timestamp": epoch(),
@@ -107,65 +168,6 @@ class Frenship:
             # except Exception as e:
             #     print("failed to send packet")
             sleep_ms(self.snapshot_interval_ms)
-
-    def init_tcp(self):
-        # context = ssl.create_default_context()
-        #  context.load_cert_chain(certfile="cert.pem", keyfile="key.pem")
-
-        context = ssl.SSLContext(ssl.PROTOCOL_TLS)
-        context.load_verify_locations("rootCA.pem")
-
-        self.tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.tcp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.tcp_sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, True)
-
-        self.server_port = 5002
-
-        # self.addr = (self.server_address, self.port)
-        # self.socket = socket.create_connection(self.addr)
-        self.tcp_sock = context.wrap_socket(
-            self.tcp_sock, server_hostname=self.server_address
-        )
-        # self.tcp_sock = self.socket
-
-        self.connection_id = self.tcp_connect()
-        # print("connection successful ")
-        print(f"assigned connection ID: {self.connection_id}")
-
-    def tcp_connect(self):
-        try:
-            print("attempting connection...")
-            self.tcp_sock.connect((self.server_address, self.server_port))
-            print("connection successful")
-            return deserialize(self.tcp_sock.recv(2048), strict_map_key=False)
-        except:
-            print("connection failed")
-            pass
-
-    def tcp_send(self, data):
-        try:
-            # print("sending data...")
-            self.tcp_sock.send(serialize(data))
-            # print("data sent")
-        except socket.error as e:
-            print(e)
-            return None
-
-    def tcp_scan(self):
-        # try:
-        data = self.tcp_sock.recv(2048 * 2)
-        try:
-            packet = deserialize(data, strict_map_key=False)
-            return packet
-        except Exception as e:
-            try:
-                for packet in msgpack.unpackb(data, strict_map_key=False):
-                    print(packet)
-                print(f"{e}")
-                print(data)
-            except:
-                print(f"{e}")
-                print(data)
 
     # except Exception as e:
     #     print("problem receiving data")

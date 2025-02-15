@@ -19,7 +19,7 @@ class network:
         self.receiving_connections = []
         self.incoming_addr = ""
         self.port = 5002
-        self.snapshot_interval_ms = 1  # ms
+        self.snapshot_interval_ms = 50  # ms
         self.snapshot_buffer_size = 10
         self.queue = []
         # context = ssl.create_default_context()
@@ -31,8 +31,10 @@ class network:
         )
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
         self.sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, True)
+        self.sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK, False)
+
         self.sock = self.context.wrap_socket(self.sock, server_side=True)
         print("attempting bind:")
         try:
@@ -60,7 +62,8 @@ class network:
 
         while True:
             for _ in self.queue:
-                sock.sendall(serialize(self.queue.pop()))
+                self.tcp_send(sock, self.queue.pop())
+                # sock.sendall(serialize(self.queue.pop()))
             packet = {
                 "type": "worldstate",
                 "worldstate": worldstate,
@@ -68,8 +71,10 @@ class network:
             }
             # packet = {"type": "epoch", "timestamp": epoch()}
             try:
-                sock.sendall(serialize(packet))
+                self.tcp_send(sock, packet)
+                # sock.sendall(serialize(packet))
             except Exception as e:
+                print("send error")
                 print(
                     f"sending messed up for client {connection_id},terminating connection"
                 )
@@ -87,12 +92,14 @@ class network:
         while True:
             try:
                 # print("listening...")
-                data = sock.recv(2048)
+                packet = self.tcp_scan(sock)
+                # data = sock.recv(2048)
 
-                packet = deserialize(data, strict_map_key=False)
+                # packet = deserialize(data, strict_map_key=False)
                 if not packet:
-                    print("<connection terminated>")
-                    break
+                    raise (Exception("<connection terminated>"))
+                    # print("<connection terminated>")
+                    # break
                 # print(f"received{packet}")
                 # try:
                 if packet["type"] == "player_state":
@@ -122,14 +129,16 @@ class network:
 
             except Exception as e:
                 print(
-                    f"receiving messed up for client {connection_id},terminating connection and deleting entries"
+                    f"broken connection for {connection_id},\nterminating connection\nand deleting playerstate"
                 )
                 del worldstate["players"][connection_id]
                 # raise Exception(e)
-                # print(e)
+                print(e)
+                print("closing socket")
                 sock.close()
                 break
             # sleep_ms(100)
+        print(f"{connection_id} receiving terminated")
 
     def await_connections(self):
         connection_id = 1
@@ -163,3 +172,26 @@ class network:
             sending_thread.start()
             receiving_thread.start()
             connection_id += 1
+
+    def tcp_send(self, sock, packet):
+        # print("sending data...")
+        sock.sendall(serialize(packet))
+        # print("data sent")
+
+    def tcp_scan(self, sock):
+        data = sock.recv(2048 * 4)
+        try:
+            packet = deserialize(data, strict_map_key=False)
+
+            return packet
+        except Exception as e:
+            try:
+                for packet in msgpack.unpackb(data, strict_map_key=False):
+                    print(packet)
+                print("scan error")
+                print(f"{e}")
+                print(data)
+            except:
+                print("scan error")
+                print(f"{e}")
+                print(data)
