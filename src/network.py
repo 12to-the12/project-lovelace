@@ -37,9 +37,12 @@ class Frenship:
         global worldstate
         worldstate = {1: 2}
         self.send_position_thread = threading.Thread(target=self.sending)
+        # this prevents threads from persisting past main
+        self.send_position_thread.daemon = True
         self.send_position_thread.start()
 
         self.read_worldstate_thread = threading.Thread(target=self.receiving)
+        self.read_worldstate_thread.daemon = True
         self.read_worldstate_thread.start()
 
     def receiving(self):

@@ -142,6 +142,10 @@ class network:
                     connection_id,
                 ),
             )
+            # just in case I don't want them to persist
+            sending_thread.daemon = True
+            receiving_thread.daemon = True
+
             self.sending_connections.append(sending_thread)
             self.receiving_connections.append(receiving_thread)
             conn.send(serialize(connection_id))
