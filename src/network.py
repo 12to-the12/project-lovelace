@@ -6,6 +6,11 @@ import ssl
 from time import sleep
 from msgpack import unpackb as deserialize
 from msgpack import packb as serialize
+from time import time as epoch
+from spatial import ball
+
+sleep_ms = lambda x: sleep(x / 1000)
+import threading
 
 # # import pickle
 # from pickle import dumps as serialize
@@ -14,12 +19,66 @@ from msgpack import packb as serialize
 
 class Frenship:
     def __init__(self):
-        # self.server_address = "lovelace.loganhillyer.me"
+        self.worldstate = {}
+        # worldstate["this is apossible alernativet"] = "2"
+
+        # print(worldstate)
+        self.server_address = "lovelace.loganhillyer.me"
         # self.server_address = "47.155.218.95"
-        self.server_address = "192.168.4.107"
+        # self.server_address = "192.168.4.107"
 
         self.init_tcp()
+        self.launch_streams()
         # self.init_udp()
+
+    def launch_streams(self):
+        global worldstate
+        worldstate = {1: 2}
+        self.send_position_thread = threading.Thread(target=self.sending)
+        self.send_position_thread.start()
+
+        self.read_worldstate_thread = threading.Thread(target=self.receiving)
+        self.read_worldstate_thread.start()
+
+    def receiving(self):
+        global worldstate
+        while True:
+            # print("listening...")
+            packet = self.tcp_scan()
+            if not packet:
+                print("<connection terminated>")
+                break
+            # print(f"packet received: {packet}")
+            if packet["type"] == "worldstate":
+                # print(f"worldstate updated")
+                # print(f"networking's worldstate: {worldstate}")
+                self.worldstate = packet["worldstate"]
+
+            if packet["type"] == "epoch":
+                remote = packet["timestamp"]
+                local = epoch()
+                diff = local - remote
+                print(diff)
+
+            # print(worldstate)
+            # sleep_ms(100)
+
+    def sending(self):
+        while True:
+            packet = {
+                "type": "player_state",
+                "id": self.connection_id,
+                "player_state": {
+                    "position": (ball.pos.x, ball.pos.y, ball.pos.z),
+                    "velocity": (ball.vel.x, ball.vel.y, ball.vel.z),
+                    "acceleration": (ball.acc.x, ball.acc.y, ball.acc.z),
+                },
+                "timestamp": epoch(),
+            }
+            # print(packet)
+            # print("sending position")
+            self.tcp_send(packet)
+            sleep_ms(1)
 
     def init_tcp(self):
         # context = ssl.create_default_context()

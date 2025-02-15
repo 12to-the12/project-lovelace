@@ -35,7 +35,7 @@ stop-server:
 	-ssh services "tmux kill-session -t 'server'"
 	
 push-server: stop-server
-	rsync -avzch ./src/server/ services:~/server/
+	rsync -avzh ./src/server/ services:~/server/
 
 start-server: push-server
 	ssh services "tmux new-session -d -s 'server' ./server/server_main.py"

@@ -13,39 +13,6 @@ from worldstate import worldstate
 sleep_ms = lambda x: sleep(x / 1000)
 
 
-def sending(sock, connection_id):
-    global worldstate
-
-    while True:
-        packet = {"type": "worldstate", "worldstate": worldstate, "timestamp": epoch()}
-        # packet = {"type": "epoch", "timestamp": epoch()}
-
-        sock.sendall(serialize(packet))
-        sleep_ms(1)
-
-
-def receiving(sock, connection_id):
-    global worldstate
-    # sock.send(serialize(connection_id))
-    while True:
-        try:
-            # print("listening...")
-            data = sock.recv(2048)
-
-            packet = deserialize(data, strict_map_key=False)
-            if not packet:
-                break
-            # print(f"received{packet}")
-            if packet["type"] == "player_state":
-                worldstate["players"][connection_id] = {
-                    "player_state": packet["player_state"],
-                    "timestamp": packet["timestamp"],
-                }
-
-        except Exception as e:
-            print(e)
-
-
 class network:
     def __init__(self):
         self.sending_connections = []
@@ -75,6 +42,84 @@ class network:
         self.handle_new_connections = threading.Thread(target=self.await_connections)
         self.handle_new_connections.start()
 
+    # gets rid of snapshots older than 5 seconds
+    def clean_snapshots(self, connection_id):
+        global worldstate
+        most_recent = 0
+        times = worldstate["players"][connection_id]["player_state"].keys()
+        most_recent = max(times)
+        for timestamp in times:
+            if (most_recent - timestamp) > 5:
+                del worldstate["players"][connection_id]["player_state"][timestamp]
+
+    def sending(self, sock, connection_id):
+        global worldstate
+
+        while True:
+            packet = {
+                "type": "worldstate",
+                "worldstate": worldstate,
+                "timestamp": epoch(),
+            }
+            # packet = {"type": "epoch", "timestamp": epoch()}
+            try:
+                sock.sendall(serialize(packet))
+            except Exception as e:
+                print(
+                    f"sending messed up for client {connection_id},terminating connection"
+                )
+                print(e)
+                sock.close()
+                break
+            sleep_ms(50)
+
+    def receiving(self, sock, connection_id):
+        global worldstate
+        worldstate["players"][connection_id] = {"player_state": {"buffer": []}}
+        # sock.send(serialize(connection_id))
+        while True:
+            try:
+                # print("listening...")
+                data = sock.recv(2048)
+
+                packet = deserialize(data, strict_map_key=False)
+                if not packet:
+                    print("<connection terminated>")
+                    break
+                # print(f"received{packet}")
+                # try:
+                if packet["type"] == "player_state":
+                    player_state = worldstate["players"][connection_id]["player_state"]
+                    # if player_state.get("new"):
+                    #     player_state["old"] = player_state["new"]
+                    player_state["buffer"].insert(
+                        0,
+                        {
+                            "timestamp": packet["timestamp"],
+                            "state": packet["player_state"],
+                        },
+                    )
+                    if len(player_state["buffer"]) > 5:
+                        player_state["buffer"].pop()
+
+                # except Exception as e:
+                #     print("error, couldn't add snapshot")
+                #     print(e)
+                # try:
+                #     self.clean_snapshots(connection_id)
+                # except Exception as e:
+                #     print("error, couldn't clean snapshots")
+                #     print(e)
+
+            except Exception as e:
+                print(
+                    f"receiving messed up for client {connection_id},terminating connection"
+                )
+                raise Exception(e)
+                # print(e)
+                # sock.close()
+                break
+
     def await_connections(self):
         connection_id = 1
         self.sock.listen(5)
@@ -83,14 +128,14 @@ class network:
             conn, address = self.sock.accept()
             print("connection accepted,spawning client thread")
             sending_thread = threading.Thread(
-                target=sending,
+                target=self.sending,
                 args=(
                     conn,
                     connection_id,
                 ),
             )
             receiving_thread = threading.Thread(
-                target=receiving,
+                target=self.receiving,
                 args=(
                     conn,
                     connection_id,
