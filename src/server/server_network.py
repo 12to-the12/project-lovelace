@@ -19,8 +19,9 @@ class network:
         self.receiving_connections = []
         self.incoming_addr = ""
         self.port = 5002
-        self.snapshot_interval_ms = 50  # ms
+        self.snapshot_interval_ms = 1  # ms
         self.snapshot_buffer_size = 10
+        self.queue = []
         # context = ssl.create_default_context()
 
         self.context = ssl.SSLContext(ssl.PROTOCOL_TLS)
@@ -58,6 +59,8 @@ class network:
         global worldstate
 
         while True:
+            for _ in self.queue:
+                sock.sendall(serialize(self.queue.pop()))
             packet = {
                 "type": "worldstate",
                 "worldstate": worldstate,
@@ -101,6 +104,13 @@ class network:
                         stamptodelete = player_state["buffer"].pop()
                         del player_state["snapshots"][stamptodelete]
 
+                if packet["type"] == "ping":
+                    outgoing = {
+                        "type": "pong",
+                        "timestamp": epoch(),
+                        "client_timestamp": packet["timestamp"],
+                    }
+                    self.queue.insert(0, outgoing)
                 # except Exception as e:
                 #     print("error, couldn't add snapshot")
                 #     print(e)

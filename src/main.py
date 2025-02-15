@@ -9,6 +9,7 @@ import threading
 from server import worldstate
 from spatial import SpatialVector, ball, SpatialObject, build_ball, mix
 from network import Frenship
+from timing import Pulse
 
 from pygame.time import Clock
 
@@ -25,7 +26,7 @@ pygame.display.set_caption("CLIENT")
 
 # Initialize Pygame
 pygame.init()
-update_interval = 1000  # ms
+readout_interval = 1000  # ms
 # Set up display
 width, height = 1500, 1000
 # screen = pygame.display.set_mode((width, height))
@@ -107,7 +108,7 @@ while True:
     # if worldstate:
     #     print(worldstate)
 
-    temporal_adjustment = 200 / 1000  # run remote on 50ms lag
+    temporal_adjustment = 400 / 1000  # number of seconds to lag the remote worldstate
     for ID in frenship.worldstate["players"].keys():
         # if ID == frenship.connection_id:
         #     continue
@@ -177,12 +178,10 @@ while True:
                 moved = (myball.pos.x, myball.pos.y)
             radius = 40 * 0.6**last_age
             pygame.draw.circle(screen, (255, 126, 0), moved, radius)
-        # transmitting too fast without enough values in the buffer
-        elif oldest_age < 0:
-            print("the oldest snapshot on record is more recent than our target time ")
-            # quit()
-        # past extrapolation
-        # the last age is older than the target
+
+        # future extrapolation
+        # oldest age implied to be bigger than last age
+        # temporal adjustment not enough to compensate for latency
         elif last_age > 0:
             # lastball = build_ball(snapshots[last_age])
             moved = (
@@ -192,21 +191,20 @@ while True:
 
             radius = 40 * 0.6**last_age
             pygame.draw.circle(screen, (0, 255, 0), moved, radius)
-        # future extrapolation?
+        # low latency, not enough snapshots, not really a problem?
+        # last age implied to be smaller than oldest age
+        elif oldest_age < 0:
+            # print("the oldest snapshot on record is more recent than our target time ")
+            pass
+
         else:
-            moved = (
-                lastball.pos.x + (lastball.vel.x * last_age),
-                lastball.pos.y + (lastball.vel.y * last_age),
-            )
+            raise (Exception("unreachable state"))
 
-            radius = 40 * 0.6**last_age
-            pygame.draw.circle(screen, (255, 255, 255), moved, radius)
-
-        if (epoch() - stamp) * 1000 > update_interval:
+        if (epoch() - stamp) * 1000 > readout_interval:
             stamp = epoch()
-            print(f"last age: {last_age * 1000:.0f}ms")
-            print(f"oldest age: {oldest_age * 1000:.0f}ms")
-            # print(snapshots)
+            # print(f"last age: {last_age * 1000:.0f}ms")
+            # print(f"oldest age: {oldest_age * 1000:.0f}ms")
+            print(f"worldstate age: {(epoch() - last_timestamp) * 1000:.0f}ms")
             # print("\n\n\n\n")
 
         # accelerated = (

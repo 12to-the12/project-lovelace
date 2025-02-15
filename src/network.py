@@ -7,6 +7,7 @@ from time import sleep
 from msgpack import unpackb as deserialize
 from msgpack import packb as serialize
 from time import time as epoch
+from timing import Pulse
 from spatial import ball
 
 sleep_ms = lambda x: sleep(x / 1000)
@@ -19,7 +20,7 @@ import threading
 
 class Frenship:
     def __init__(self):
-        self.snapshot_interval_ms = 50  # ms
+        self.snapshot_interval_ms = 1  # ms
 
         self.worldstate = {}
         # worldstate["this is apossible alernativet"] = "2"
@@ -63,18 +64,32 @@ class Frenship:
                 # print(f"networking's worldstate: {worldstate}")
                 self.worldstate = packet["worldstate"]
 
-            if packet["type"] == "epoch":
+            if packet["type"] == "pong":
+                original = packet["client_timestamp"]
                 remote = packet["timestamp"]
-                local = epoch()
-                diff = local - remote
-                print(diff)
+                now = epoch()
+                # print("ping")
+                # print(f"\tto server: {(remote - original) * 1_000:0.2f}ms")
+                # print(f"\treturn: {(now - remote) * 1000:.2f}ms")
+                print(f"ping: {(now - original) * 1000:.2f}ms")
+
         # except:
         #     print("failed while scanning")
         # print(worldstate)
         # sleep_ms(100)
 
     def sending(self):
+        timing_pulse = Pulse(period=1)
         while True:
+            if timing_pulse.read():
+                # send epoch packet
+                print("sending ping")
+                packet = {
+                    "type": "ping",
+                    "timestamp": epoch(),
+                }
+                self.tcp_send(packet)
+
             packet = {
                 "type": "player_state",
                 "id": self.connection_id,
