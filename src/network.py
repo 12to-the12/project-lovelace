@@ -46,10 +46,14 @@ class Frenship:
         global worldstate
         while True:
             # print("listening...")
+            # try:
             packet = self.tcp_scan()
+            if packet == None:
+                continue
             if not packet:
                 print("<connection terminated>")
                 break
+
             # print(f"packet received: {packet}")
             if packet["type"] == "worldstate":
                 # print(f"worldstate updated")
@@ -61,9 +65,10 @@ class Frenship:
                 local = epoch()
                 diff = local - remote
                 print(diff)
-
-            # print(worldstate)
-            # sleep_ms(100)
+        # except:
+        #     print("failed while scanning")
+        # print(worldstate)
+        # sleep_ms(100)
 
     def sending(self):
         while True:
@@ -79,7 +84,10 @@ class Frenship:
             }
             # print(packet)
             # print("sending position")
+            # try:
             self.tcp_send(packet)
+            # except Exception as e:
+            #     print("failed to send packet")
             sleep_ms(self.snapshot_interval_ms)
 
     def init_tcp(self):
@@ -93,7 +101,7 @@ class Frenship:
         self.tcp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.tcp_sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, True)
 
-        self.port = 5002
+        self.server_port = 5002
 
         # self.addr = (self.server_address, self.port)
         # self.socket = socket.create_connection(self.addr)
@@ -109,7 +117,7 @@ class Frenship:
     def tcp_connect(self):
         try:
             print("attempting connection...")
-            self.tcp_sock.connect((self.server_address, self.port))
+            self.tcp_sock.connect((self.server_address, self.server_port))
             print("connection successful")
             return deserialize(self.tcp_sock.recv(2048), strict_map_key=False)
         except:
@@ -126,9 +134,24 @@ class Frenship:
             return None
 
     def tcp_scan(self):
-        data = self.tcp_sock.recv(2048)
-        packet = deserialize(data, strict_map_key=False)
-        return packet
+        # try:
+        data = self.tcp_sock.recv(2048 * 2)
+        try:
+            packet = deserialize(data, strict_map_key=False)
+            return packet
+        except Exception as e:
+            try:
+                for packet in msgpack.unpackb(data, strict_map_key=False):
+                    print(packet)
+                print(f"{e}")
+                print(data)
+            except:
+                print(f"{e}")
+                print(data)
+
+    # except Exception as e:
+    #     print("problem receiving data")
+    # raise(Exception(e))
 
     def init_udp(self):
         # IP = "47.155.218.95"

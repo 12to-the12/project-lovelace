@@ -19,7 +19,7 @@ class network:
         self.receiving_connections = []
         self.incoming_addr = ""
         self.port = 5002
-        self.snapshot_interval_ms = 100  # ms
+        self.snapshot_interval_ms = 50  # ms
         self.snapshot_buffer_size = 10
         # context = ssl.create_default_context()
 
@@ -44,15 +44,15 @@ class network:
         self.handle_new_connections = threading.Thread(target=self.await_connections)
         self.handle_new_connections.start()
 
-    # gets rid of snapshots older than 5 seconds
-    def clean_snapshots(self, connection_id):
-        global worldstate
-        most_recent = 0
-        times = worldstate["players"][connection_id]["player_state"].keys()
-        most_recent = max(times)
-        for timestamp in times:
-            if (most_recent - timestamp) > 5:
-                del worldstate["players"][connection_id]["player_state"][timestamp]
+    # # gets rid of snapshots older than 5 seconds
+    # def clean_snapshots(self, connection_id):
+    #     global worldstate
+    #     most_recent = 0
+    #     times = worldstate["players"][connection_id]["player_state"].keys()
+    #     most_recent = max(times)
+    #     for timestamp in times:
+    #         if (most_recent - timestamp) > 5:
+    #             del worldstate["players"][connection_id]["player_state"][timestamp]
 
     def sending(self, sock, connection_id):
         global worldstate
@@ -112,20 +112,22 @@ class network:
 
             except Exception as e:
                 print(
-                    f"receiving messed up for client {connection_id},terminating connection"
+                    f"receiving messed up for client {connection_id},terminating connection and deleting entries"
                 )
-                raise Exception(e)
+                del worldstate["players"][connection_id]
+                # raise Exception(e)
                 # print(e)
-                # sock.close()
+                sock.close()
                 break
+            # sleep_ms(100)
 
     def await_connections(self):
         connection_id = 1
         self.sock.listen(5)
         while True:
-            print("awaiting connections...")
+            print(f"awaiting connections on port {self.port}...")
             conn, address = self.sock.accept()
-            print("connection accepted,spawning client thread")
+            print(f"connection accepted,spawning thread for client {connection_id}")
             sending_thread = threading.Thread(
                 target=self.sending,
                 args=(

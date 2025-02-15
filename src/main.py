@@ -63,7 +63,7 @@ ball.pos.y = height // 2
 
 while frenship.worldstate == {}:
     # print("not present")
-    print(f"main's worldstate: {worldstate}")
+    print(f"main's worldstate: {frenship.worldstate}")
     sleep_ms(1000)
 
 print("starting gameloop")
@@ -175,7 +175,7 @@ while True:
             else:
                 myball = build_ball(snapshots[before_candidate])
                 moved = (myball.pos.x, myball.pos.y)
-            radius = 40 * 0.8**last_age
+            radius = 40 * 0.6**last_age
             pygame.draw.circle(screen, (255, 126, 0), moved, radius)
         # transmitting too fast without enough values in the buffer
         elif oldest_age < 0:
@@ -190,7 +190,7 @@ while True:
                 lastball.pos.y + (lastball.vel.y * last_age),
             )
 
-            radius = 40 * 0.8**last_age
+            radius = 40 * 0.6**last_age
             pygame.draw.circle(screen, (0, 255, 0), moved, radius)
         # future extrapolation?
         else:
@@ -199,7 +199,7 @@ while True:
                 lastball.pos.y + (lastball.vel.y * last_age),
             )
 
-            radius = 40 * 0.8**last_age
+            radius = 40 * 0.6**last_age
             pygame.draw.circle(screen, (255, 255, 255), moved, radius)
 
         if (epoch() - stamp) * 1000 > update_interval:
@@ -221,14 +221,14 @@ while True:
             lastball.pos.x + (lastball.vel.x * real_last_age),
             lastball.pos.y + (lastball.vel.y * real_last_age),
         )
-        radius = 30 * 0.7**real_last_age
+        radius = 30 * 0.5**real_last_age
         pygame.draw.circle(screen, (255, 209, 63), moved, radius)
 
         static = (
             lastball.pos.x,
             lastball.pos.y,
         )
-        radius = 20 * 0.5**real_last_age
+        radius = 20 * 0.3**real_last_age
         pygame.draw.circle(screen, (245, 243, 255), static, radius)
 
     # Update the display
