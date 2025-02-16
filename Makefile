@@ -49,4 +49,4 @@ build-exe: clean environment-install
 
 
 test-exe: build-exe
-	wine ./dist/main/main.exe
+	wine ./dist/main.exe

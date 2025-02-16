@@ -20,7 +20,7 @@ import threading
 
 class Frenship:
     def __init__(self):
-        self.snapshot_interval_ms = 50  # ms
+        self.snapshot_interval_ms = 20  # ms
 
         self.worldstate = {}
         # worldstate["this is apossible alernativet"] = "2"
@@ -30,9 +30,30 @@ class Frenship:
         # self.server_address = "47.155.218.95"
         # self.server_address = "192.168.4.107"
 
+        self.start = epoch()
+        self.packets_received = 0
+        self.bad_packets_received = 0
+        self.bad_packet_threshold_ms = 10
         self.init_tcp()
+        self.init_udp()
+
+        # self.ping_mode()
+
         self.launch_streams()
-        # self.init_udp()
+
+    def ping_mode(self):
+        while True:
+            # print("sending")
+            self.tcp_send(epoch())
+            packet = self.tcp_scan()
+            ping = (epoch() - packet) * 1000
+            if ping > 10:
+                self.bad_packets_received += 1
+                badrate = self.bad_packets_received / (epoch() - self.start)
+                print(
+                    f"packets above {self.bad_packet_threshold_ms}ms per second: {badrate:.2f}"
+                )
+            # print(f"{ping=:.2f}")
 
     def init_tcp(self):
         # context = ssl.create_default_context()
@@ -44,7 +65,7 @@ class Frenship:
         self.tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.tcp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
         self.tcp_sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, True)
-        self.tcp_sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK, False)
+        # self.tcp_sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK, False)
 
         self.server_port = 5002
 
@@ -80,20 +101,26 @@ class Frenship:
 
     def tcp_scan(self):
         # try:
-        data = self.tcp_sock.recv(2048 * 4)
+        data = self.tcp_sock.recv(2048 * 8)
         try:
-            print(f"packet size received: {len(data)} bytes")
+            # print(f"packet size received: {len(data)} bytes")
             packet = deserialize(data, strict_map_key=False)
+            self.packets_received += 1
+            # print(
+            #     f"received per second: {self.packets_received / (epoch() - self.start):.0f}"
+            # )
+
             return packet
         except Exception as e:
-            try:
-                for packet in msgpack.unpackb(data, strict_map_key=False):
-                    print(packet)
-                print(f"{e}")
-                print(data)
-            except:
-                print(f"{e}")
-                print(data)
+            raise (Exception(e))
+            # try:
+            #     for packet in msgpack.unpackb(data, strict_map_key=False):
+            #         print(packet)
+            #     print(f"{e}")
+            # print(data)
+            # except:
+            #     print(f"{e}")
+            #     print(data)
 
     def launch_streams(self):
         global worldstate
@@ -111,32 +138,32 @@ class Frenship:
         global worldstate
         while True:
             # print("listening...")
-            # try:
-            packet = self.tcp_scan()
-            if packet == None:
+            try:
+                packet = self.tcp_scan()
+                if packet == None:
+                    continue
+                if not packet:
+                    print("<connection terminated>")
+                    break
+
+                # print(f"packet received: {packet}")
+                if packet["type"] == "worldstate":
+                    # print(f"worldstate updated")
+                    # print(f"networking's worldstate: {worldstate}")
+                    self.worldstate = packet["worldstate"]
+
+                if packet["type"] == "pong":
+                    original = packet["client_timestamp"]
+                    remote = packet["timestamp"]
+                    now = epoch()
+                    # print("ping")
+                    # print(f"\tto server: {(remote - original) * 1_000:0.2f}ms")
+                    # print(f"\treturn: {(now - remote) * 1000:.2f}ms")
+                    print(f"ping: {(now - original) * 1000:.2f}ms")
+
+            except:
                 continue
-            if not packet:
-                print("<connection terminated>")
-                break
-
-            # print(f"packet received: {packet}")
-            if packet["type"] == "worldstate":
-                # print(f"worldstate updated")
-                # print(f"networking's worldstate: {worldstate}")
-                self.worldstate = packet["worldstate"]
-
-            if packet["type"] == "pong":
-                original = packet["client_timestamp"]
-                remote = packet["timestamp"]
-                now = epoch()
-                # print("ping")
-                # print(f"\tto server: {(remote - original) * 1_000:0.2f}ms")
-                # print(f"\treturn: {(now - remote) * 1000:.2f}ms")
-                print(f"ping: {(now - original) * 1000:.2f}ms")
-
-        # except:
-        #     print("failed while scanning")
-        # print(worldstate)
+                # print("failed while scanning")
         # sleep_ms(100)
 
     def sending(self):
@@ -164,7 +191,10 @@ class Frenship:
             # print(packet)
             # print("sending position")
             # try:
-            self.tcp_send(packet)
+
+            # self.tcp_send(packet)
+            self.udp_send(packet)
+
             # except Exception as e:
             #     print("failed to send packet")
             sleep_ms(self.snapshot_interval_ms)
@@ -177,19 +207,17 @@ class Frenship:
         # IP = "47.155.218.95"
         # UDP_IP = "192.168.4.95"
         # UDP_IP = "127.0.0.1"
-        MY_IP = "192.168.4.95"
+        self.MY_IP = "192.168.4.95"
         # UDP_PORT = 5003
-        self.SERVER_TO_CLIENT_PORT = 5003
-        self.CLIENT_TO_SERVER_PORT = 5002
+        # self.SERVER_TO_CLIENT_PORT = 5003
+        self.CLIENT_TO_SERVER_PORT = 5003
 
-        self.downstream = socket.socket(
-            socket.AF_INET, socket.SOCK_DGRAM
-        )  # Internet  # UDP
-        self.downstream.bind((MY_IP, self.SERVER_TO_CLIENT_PORT))
+        # self.downstream = socket.socket(
+        #     socket.AF_INET, socket.SOCK_DGRAM
+        # )  # Internet  # UDP
+        # self.downstream.bind((MY_IP, self.SERVER_TO_CLIENT_PORT))
 
-        self.upstream = socket.socket(
-            socket.AF_INET, socket.SOCK_DGRAM
-        )  # Internet  # UDP
+        self.udp_sender_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         # self.upstream.bind((UDP_IP, self.CLIENT_TO_SERVER_PORT))
 
     def udp_scan(self):
@@ -197,6 +225,8 @@ class Frenship:
         data = msgpack.unpackb(data, strict_map_key=False)
         return data
 
-    def udp_send(self, data):
-        data = msgpack.packb(data)
-        self.upstream.sendto(data, (self.server_address, self.CLIENT_TO_SERVER_PORT))
+    def udp_send(self, packet):
+        data = serialize(packet)
+        self.udp_sender_sock.sendto(
+            data, (self.server_address, self.CLIENT_TO_SERVER_PORT)
+        )

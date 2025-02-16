@@ -21,7 +21,7 @@ from time import sleep
 frenship = Frenship()
 # print(worldstate)
 # quit()
-pygame.display.set_caption("CLIENT")
+pygame.display.set_caption(str(frenship.connection_id))
 
 
 # Initialize Pygame
@@ -108,10 +108,10 @@ while True:
     # if worldstate:
     #     print(worldstate)
 
-    temporal_adjustment = 400 / 1000  # number of seconds to lag the remote worldstate
+    temporal_adjustment = 50 / 1000  # number of seconds to lag the remote worldstate
     for ID in frenship.worldstate["players"].keys():
-        # if ID == frenship.connection_id:
-        #     continue
+        if ID == frenship.connection_id:
+            continue
 
         buffer = frenship.worldstate["players"][ID]["player_state"]["buffer"]
         if buffer == []:
@@ -190,7 +190,11 @@ while True:
             )
 
             radius = 40 * 0.6**last_age
-            pygame.draw.circle(screen, (0, 255, 0), moved, radius)
+            pygame.draw.circle(screen, (200, 200, 255), moved, radius)
+
+            # relic = (lastball.pos.x, lastball.pos.y)
+            # radius = 35 * 0.6**last_age
+            # pygame.draw.circle(screen, (180, 180, 240), relic, radius)
         # low latency, not enough snapshots, not really a problem?
         # last age implied to be smaller than oldest age
         elif oldest_age < 0:
@@ -205,6 +209,7 @@ while True:
             # print(f"last age: {last_age * 1000:.0f}ms")
             # print(f"oldest age: {oldest_age * 1000:.0f}ms")
             print(f"worldstate age: {(epoch() - last_timestamp) * 1000:.0f}ms")
+            print(f"oldest worldstate age: {(epoch() - oldest_timestamp) * 1000:.0f}ms")
             # print("\n\n\n\n")
 
         # accelerated = (
@@ -220,14 +225,14 @@ while True:
             lastball.pos.y + (lastball.vel.y * real_last_age),
         )
         radius = 30 * 0.5**real_last_age
-        pygame.draw.circle(screen, (255, 209, 63), moved, radius)
+        # pygame.draw.circle(screen, (255, 209, 63), moved, radius)
 
         static = (
             lastball.pos.x,
             lastball.pos.y,
         )
         radius = 20 * 0.3**real_last_age
-        pygame.draw.circle(screen, (245, 243, 255), static, radius)
+        # pygame.draw.circle(screen, (245, 243, 255), static, radius)
 
     # Update the display
     pygame.display.flip()

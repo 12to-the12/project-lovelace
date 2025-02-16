@@ -8,7 +8,7 @@ I've implemented a TCP based gamestate protocol and 3 different ways of drawing 
 
 - just drawing their most recent recorded location (white)
 - guessing where they'd be given the timestamp of their last location & their velocity (yellow)
-- replaying where they were 50ms ago, interpolating between snapshots, the best way to do things(orange) 
+- replaying where they were 50ms ago, interpolating between snapshots, the best way to do things(orange), this disk flashes bright blue if it's having to extrapolate from old data to arrive to 50ms ago.
 
 red represents where the local player is
 
