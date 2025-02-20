@@ -32,14 +32,14 @@ clean:
 
 
 stop-server:
-	-ssh services "tmux kill-session -t 'server'"
+	-ssh lovelace "tmux kill-session -t 'server'"
 	
 push-server: stop-server
-	rsync -avzh ./src/server/ services:~/server/
+	rsync -avzh ./src/server/ lovelace:~/server/
 
 start-server: push-server
-	ssh services "tmux new-session -d -s 'server' ./server/server_main.py"
-	ssh services "tmux ls"
+	ssh lovelace "tmux new-session -d -s 'server' ./server/server_main.py"
+	ssh lovelace "tmux ls"
 environment-install:
 	wine ${wPython}/python.exe ${wPython}/Scripts/pip.exe install -r requirements.txt
 

@@ -18,6 +18,16 @@ from time import time as epoch
 from time import sleep
 
 
+class Config:
+    def __init__(self):
+        self.draw_last_pos = True
+        self.draw_interpolated = True
+        self.draw_time_dilated = True
+        self.draw_self = True
+
+
+config = Config()
+
 frenship = Frenship()
 # print(worldstate)
 # quit()
@@ -62,55 +72,11 @@ clock = Clock()
 # ball.pos.x = width // 2
 # ball.pos.y = height // 2
 
-while frenship.worldstate == {}:
-    # print("not present")
-    print(f"main's worldstate: {frenship.worldstate}")
-    sleep_ms(1000)
 
-print("starting gameloop")
-
-while True:
-    # clock.tick(20)
-    start = epoch()
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.display.quit()
-            pygame.quit()
-            sys.exit()
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_LEFT:
-                left = True
-            if event.key == pygame.K_RIGHT:
-                right = True
-            if event.key == pygame.K_UP:
-                up = True
-            if event.key == pygame.K_DOWN:
-                down = True
-        if event.type == pygame.KEYUP:
-            if event.key == pygame.K_LEFT:
-                left = False
-            if event.key == pygame.K_RIGHT:
-                right = False
-            if event.key == pygame.K_UP:
-                up = False
-            if event.key == pygame.K_DOWN:
-                down = False
-    screen.fill(BLACK)
-    ball.push(right, left, up, down)
-
-    center = (
-        ball.pos.x,
-        ball.pos.y,
-    )
-    radius = 50
-    pygame.draw.circle(screen, (255, 56, 0), center, radius)
-    # Draw a ciK_LEFTrcle
-    # if worldstate:
-    #     print(worldstate)
-
-    temporal_adjustment = 50 / 1000  # number of seconds to lag the remote worldstate
+def draw_circles():
+    global stamp
     for ID in frenship.worldstate["players"].keys():
-        if ID == frenship.connection_id:
+        if ID == frenship.connection_id and not config.draw_self:
             continue
 
         buffer = frenship.worldstate["players"][ID]["player_state"]["buffer"]
@@ -190,7 +156,8 @@ while True:
             )
 
             radius = 40 * 0.6**last_age
-            pygame.draw.circle(screen, (200, 200, 255), moved, radius)
+            if config.draw_time_dilated:
+                pygame.draw.circle(screen, (200, 200, 255), moved, radius)
 
             # relic = (lastball.pos.x, lastball.pos.y)
             # radius = 35 * 0.6**last_age
@@ -225,15 +192,66 @@ while True:
             lastball.pos.y + (lastball.vel.y * real_last_age),
         )
         radius = 30 * 0.5**real_last_age
-        # pygame.draw.circle(screen, (255, 209, 63), moved, radius)
+        if config.draw_interpolated:
+            pygame.draw.circle(screen, (255, 209, 63), moved, radius)
 
         static = (
             lastball.pos.x,
             lastball.pos.y,
         )
         radius = 20 * 0.3**real_last_age
-        # pygame.draw.circle(screen, (245, 243, 255), static, radius)
+        if config.draw_last_pos:
+            pygame.draw.circle(screen, (245, 243, 255), static, radius)
 
+
+while frenship.worldstate == {}:
+    # print("not present")
+    print(f"main's worldstate: {frenship.worldstate}")
+    sleep_ms(1000)
+
+print("starting gameloop")
+
+while True:
+    # clock.tick(20)
+    start = epoch()
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.display.quit()
+            pygame.quit()
+            sys.exit()
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_LEFT:
+                left = True
+            if event.key == pygame.K_RIGHT:
+                right = True
+            if event.key == pygame.K_UP:
+                up = True
+            if event.key == pygame.K_DOWN:
+                down = True
+        if event.type == pygame.KEYUP:
+            if event.key == pygame.K_LEFT:
+                left = False
+            if event.key == pygame.K_RIGHT:
+                right = False
+            if event.key == pygame.K_UP:
+                up = False
+            if event.key == pygame.K_DOWN:
+                down = False
+    screen.fill(BLACK)
+    ball.push(right, left, up, down)
+
+    center = (
+        ball.pos.x,
+        ball.pos.y,
+    )
+    radius = 50
+    pygame.draw.circle(screen, (255, 56, 0), center, radius)
+    # Draw a ciK_LEFTrcle
+    # if worldstate:
+    #     print(worldstate)
+
+    temporal_adjustment = 50 / 1000  # number of seconds to lag the remote worldstate
+    draw_circles()
     # Update the display
     pygame.display.flip()
     end = epoch()
