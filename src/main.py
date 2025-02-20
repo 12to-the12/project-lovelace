@@ -20,8 +20,10 @@ from time import sleep
 
 class Config:
     def __init__(self):
+        self.temporal_adjustment_ms = 50
+        self.temporal_adjustment = self.temporal_adjustment_ms / 1_000
         self.draw_last_pos = True
-        self.draw_interpolated = True
+        self.draw_interpolated = False
         self.draw_time_dilated = True
         self.draw_self = True
 
@@ -74,7 +76,7 @@ clock = Clock()
 
 
 def draw_circles():
-    global stamp
+    global stamp, config
     for ID in frenship.worldstate["players"].keys():
         if ID == frenship.connection_id and not config.draw_self:
             continue
@@ -94,8 +96,8 @@ def draw_circles():
 
         # timestamp = player["timestamp"]
         real_last_age = epoch() - last_timestamp
-        last_age = epoch() - last_timestamp - temporal_adjustment
-        oldest_age = epoch() - oldest_timestamp - temporal_adjustment
+        last_age = epoch() - last_timestamp - config.temporal_adjustment
+        oldest_age = epoch() - oldest_timestamp - config.temporal_adjustment
 
         # this is interpolation
         # we need the one before and the one after
@@ -103,7 +105,7 @@ def draw_circles():
         # print(f"last age: {last_age * 1000:.0f}ms")
         # print(f"oldest age: {oldest_age * 1000:.0f}ms")
         if last_age < 0 and oldest_age > 0:
-            target_time = epoch() - temporal_adjustment
+            target_time = epoch() - config.temporal_adjustment
             # print(f"{target_time=}")
             after_candidate = 1e20
             before_candidate = 0
@@ -250,7 +252,6 @@ while True:
     # if worldstate:
     #     print(worldstate)
 
-    temporal_adjustment = 50 / 1000  # number of seconds to lag the remote worldstate
     draw_circles()
     # Update the display
     pygame.display.flip()
