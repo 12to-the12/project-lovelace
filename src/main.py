@@ -17,18 +17,8 @@ from pygame.time import Clock
 from time import time as epoch
 from time import sleep
 
+from config import config
 
-class Config:
-    def __init__(self):
-        self.temporal_adjustment_ms = 50
-        self.temporal_adjustment = self.temporal_adjustment_ms / 1_000
-        self.draw_last_pos = True
-        self.draw_interpolated = False
-        self.draw_time_dilated = True
-        self.draw_self = True
-
-
-config = Config()
 
 frenship = Frenship()
 # print(worldstate)

@@ -9,6 +9,7 @@ from msgpack import packb as serialize
 from time import time as epoch
 from timing import Pulse
 from spatial import ball
+from config import config
 
 sleep_ms = lambda x: sleep(x / 1000)
 import threading
@@ -20,13 +21,13 @@ import threading
 
 class Frenship:
     def __init__(self):
-        self.snapshot_interval_ms = 20  # ms
+        self.snapshot_interval_ms = config.snapshot_interval_ms  # ms
 
         self.worldstate = {}
         # worldstate["this is apossible alernativet"] = "2"
 
         # print(worldstate)
-        self.server_address = "lovelace.loganhillyer.me"
+        self.server_address = config.server_address
         # self.server_address = "47.155.218.95"
         # self.server_address = "192.168.4.107"
 
