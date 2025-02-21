@@ -12,6 +12,7 @@ from msgpack import packb as serialize
 
 # from marshal import dumps as serialize
 # from marshal import loads as deserialize
+from config import config
 from worldstate import worldstate
 
 sleep_ms = lambda x: sleep(x / 1000)
@@ -24,8 +25,8 @@ class network:
         self.incoming_addr = ""
         self.tcp_port = 5002
         self.udp_listening_port = 5003
-        self.snapshot_interval_ms = 20  # ms
-        self.client_update_interval_ms = 20  # ms
+        self.snapshot_interval_ms = config.snapshot_interval_ms  # ms
+        self.client_update_interval_ms = config.snapshot_interval_ms  # ms
         # actually dependent on clientside interval, assumed to be same
         self.snapshot_buffer_size = 1 / (
             self.client_update_interval_ms / 1000
@@ -197,7 +198,8 @@ class network:
             self.receiving_connections.append(receiving_thread)
             self.tcp_send(conn, connection_id)
 
-            # self.ping_mode(conn)
+            if config.pingmode:
+                self.ping_mode(conn)
 
             sending_thread.start()
             receiving_thread.start()

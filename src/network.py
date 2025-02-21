@@ -8,6 +8,7 @@ from time import sleep
 
 from msgpack import unpackb as deserialize
 from msgpack import packb as serialize
+
 # import marshal
 
 # from marshal import dumps as serialize
@@ -45,7 +46,8 @@ class Frenship:
         self.init_tcp()
         self.init_udp()
 
-        # self.ping_mode()
+        if config.pingmode:
+            self.ping_mode()
 
         self.launch_streams()
 

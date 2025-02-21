@@ -35,6 +35,7 @@ stop-server:
 	-ssh lovelace "tmux kill-session -t 'server'"
 	
 push-server: stop-server
+	cp ./src/config.py ./src/server/config.py
 	rsync -avzh ./src/server/ lovelace:~/server/
 
 start-server: push-server

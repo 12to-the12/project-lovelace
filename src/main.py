@@ -229,7 +229,7 @@ def clock_wait(fps):
 
 while True:
     # clock.tick(20)
-    clock_wait(20)
+    # clock_wait(100000)
     start = epoch()
     if config.desktop_mode:
         for event in pygame.event.get():

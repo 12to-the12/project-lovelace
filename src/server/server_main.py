@@ -5,6 +5,7 @@ import msgpack
 import socket
 import threading
 from server_network import network
+from config import config
 
 sleep_ms = lambda x: sleep(x / 1000)
 
