@@ -17,54 +17,12 @@ from time import sleep
 from config import config
 
 
-frenship = Frenship()
-
-if config.desktop_mode:
-    import pygame
-    from pygame.time import Clock
-
-    # print(worldstate)
-    # quit()
-    pygame.display.set_caption(str(frenship.connection_id))
-
-    # Initialize Pygame
-    pygame.init()
-
-    # Set up display
-    width, height = 1500, 1000
-    # screen = pygame.display.set_mode((width, height))
-
-    screen = pygame.display.set_mode(
-        (width, height), pygame.HWSURFACE | pygame.DOUBLEBUF
-    )
-    surface = pygame.Surface((width, height), pygame.HWSURFACE | pygame.DOUBLEBUF)
-
-    clock = Clock()
-
-
-# Define colors
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-BLUE = (0, 0, 255)
-x = 0
-y = 0
-left = False
-right = False
-up = False
-down = False
-
-
-sleep_ms = lambda x: sleep(x / 1000)
-stamp = epoch()
-# Main loop
-
-awaiting = None
-
-
-# ball.pos.x = width // 2
-# ball.pos.y = height // 2
+class InputState:
+    def __init__(self):
+        self.right = False
+        self.left = False
+        self.up = False
+        self.down = False
 
 
 def readout(last_timestamp, oldest_timestamp):
@@ -207,27 +165,17 @@ def draw_circles():
                 pygame.draw.circle(screen, (245, 243, 255), static, radius)
 
 
-while frenship.worldstate == {}:
-    # print("not present")
-    print(f"main's worldstate: {frenship.worldstate}")
-    sleep_ms(1000)
-
-print("starting gameloop")
-
-stampb = epoch()
-
-
-def clock_wait(fps):
-    global stampb
-    frame_time = 1 / fps
-    now = epoch()
-    elapsed = now - stampb
-    if elapsed < frame_time:
-        sleep(frame_time - elapsed)
-    stampb = now
+# def clock_wait(fps):
+#     global stampb
+#     frame_time = 1 / fps
+#     now = epoch()
+#     elapsed = now - stampb
+#     if elapsed < frame_time:
+#         sleep(frame_time - elapsed)
+#     stampb = now
 
 
-while True:
+def game_loop(inputstate):
     # clock.tick(20)
     # clock_wait(100000)
     start = epoch()
@@ -239,24 +187,24 @@ while True:
                 sys.exit()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
-                    left = True
+                    inputstate.left = True
                 if event.key == pygame.K_RIGHT:
-                    right = True
+                    inputstate.right = True
                 if event.key == pygame.K_UP:
-                    up = True
+                    inputstate.up = True
                 if event.key == pygame.K_DOWN:
-                    down = True
+                    inputstate.down = True
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_LEFT:
-                    left = False
+                    inputstate.left = False
                 if event.key == pygame.K_RIGHT:
-                    right = False
+                    inputstate.right = False
                 if event.key == pygame.K_UP:
-                    up = False
+                    inputstate.up = False
                 if event.key == pygame.K_DOWN:
-                    down = False
+                    inputstate.down = False
         screen.fill(BLACK)
-    ball.push(right, left, up, down)
+    ball.push(inputstate.right, inputstate.left, inputstate.up, inputstate.down)
 
     center = (
         ball.pos.x,
@@ -275,3 +223,59 @@ while True:
         pygame.display.flip()
     end = epoch()
     # asyncio.run(update())
+
+
+if __name__ == "__main__":
+    frenship = Frenship()
+
+    if config.desktop_mode:
+        import pygame
+        from pygame.time import Clock
+
+        # print(worldstate)
+        # quit()
+        pygame.display.set_caption(str(frenship.connection_id))
+
+        # Initialize Pygame
+        pygame.init()
+
+        # Set up display
+        width, height = 1500, 1000
+        # screen = pygame.display.set_mode((width, height))
+
+        screen = pygame.display.set_mode(
+            (width, height), pygame.HWSURFACE | pygame.DOUBLEBUF
+        )
+        surface = pygame.Surface((width, height), pygame.HWSURFACE | pygame.DOUBLEBUF)
+
+        clock = Clock()
+
+    inputstate = InputState()
+    # Define colors
+    BLACK = (0, 0, 0)
+    WHITE = (255, 255, 255)
+    RED = (255, 0, 0)
+    GREEN = (0, 255, 0)
+    BLUE = (0, 0, 255)
+    x = 0
+    y = 0
+
+    sleep_ms = lambda x: sleep(x / 1000)
+    stamp = epoch()
+    # Main loop
+
+    awaiting = None
+
+    # ball.pos.x = width // 2
+    # ball.pos.y = height // 2
+
+    while frenship.worldstate == {}:
+        # print("not present")
+        print(f"main's worldstate: {frenship.worldstate}")
+        sleep_ms(1000)
+
+    print("starting gameloop")
+
+    # stampb = epoch()
+    while True:
+        game_loop(inputstate)
