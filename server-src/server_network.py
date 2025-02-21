@@ -1,6 +1,7 @@
 from os import times_result
 import ssl
-import msgpack
+
+# import msgpack
 import socket
 import threading
 from time import sleep

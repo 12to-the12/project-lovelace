@@ -5,10 +5,8 @@ import asyncio
 
 # import msgpack
 # import threading
-from server import worldstate
-from spatial import SpatialVector, ball, SpatialObject, build_ball, mix
+from spatial import ball, build_ball, mix
 from network import Frenship
-from timing import Pulse
 
 
 from time import time as epoch
@@ -62,9 +60,6 @@ def draw_circles():
 
         # this is interpolation
         # we need the one before and the one after
-        # print(buffer)
-        # print(f"last age: {last_age * 1000:.0f}ms")
-        # print(f"oldest age: {oldest_age * 1000:.0f}ms")
         if last_age < 0 and oldest_age > 0:
             target_time = epoch() - config.temporal_adjustment
             # print(f"{target_time=}")
@@ -74,23 +69,20 @@ def draw_circles():
                 # if before target and right before
                 if timestamp < target_time:
                     if timestamp > before_candidate:
-                        # print(f"the timestamp {timestamp} might be right before")
                         before_candidate = timestamp
 
                 # if after target and right after
 
                 if timestamp > target_time:
                     if timestamp < after_candidate:
-                        # print(f"the timestamp {timestamp} might be right after")
                         after_candidate = timestamp
-            # print(before_candidate)
             if before_candidate == 0:
                 print("no before candidate found")
-                print("this is a race condition")
+                print("this is likely a race condition")
                 continue
             if after_candidate == 1e20:
                 print("no after candidate found")
-                print("this is a race condition")
+                print("this is likely a race condition")
                 continue
             before_delta = target_time - before_candidate
             after_delta = after_candidate - target_time
@@ -123,10 +115,6 @@ def draw_circles():
             if config.draw_time_dilated:
                 if config.desktop_mode:
                     pygame.draw.circle(screen, (200, 200, 255), moved, radius)
-
-            # relic = (lastball.pos.x, lastball.pos.y)
-            # radius = 35 * 0.6**last_age
-            # pygame.draw.circle(screen, (180, 180, 240), relic, radius)
         # low latency, not enough snapshots, not really a problem?
         # last age implied to be smaller than oldest age
         elif oldest_age < 0:
@@ -137,14 +125,6 @@ def draw_circles():
             raise (Exception("unreachable state"))
 
         readout(last_timestamp, oldest_timestamp)
-
-        # accelerated = (
-        #     myball.pos.x + (age * (myball.vel.x + (age * myball.acc.x))),
-        #     myball.pos.y + (age * (myball.vel.y + (age * myball.acc.y))),
-        # )
-        # radius = 40 * 0.9**age
-
-        # pygame.draw.circle(screen, (255, 100, 0), accelerated, radius)
 
         moved = (
             lastball.pos.x + (lastball.vel.x * real_last_age),
@@ -213,16 +193,12 @@ def game_loop(inputstate):
     radius = 50
     if config.desktop_mode:
         pygame.draw.circle(screen, (255, 56, 0), center, radius)
-    # Draw a ciK_LEFTrcle
-    # if worldstate:
-    #     print(worldstate)
 
     draw_circles()
     # Update the display
     if config.desktop_mode:
         pygame.display.flip()
     end = epoch()
-    # asyncio.run(update())
 
 
 if __name__ == "__main__":
@@ -232,16 +208,10 @@ if __name__ == "__main__":
         import pygame
         from pygame.time import Clock
 
-        # print(worldstate)
-        # quit()
         pygame.display.set_caption(str(frenship.connection_id))
-
-        # Initialize Pygame
         pygame.init()
 
-        # Set up display
         width, height = 1500, 1000
-        # screen = pygame.display.set_mode((width, height))
 
         screen = pygame.display.set_mode(
             (width, height), pygame.HWSURFACE | pygame.DOUBLEBUF
@@ -251,7 +221,6 @@ if __name__ == "__main__":
         clock = Clock()
 
     inputstate = InputState()
-    # Define colors
     BLACK = (0, 0, 0)
     WHITE = (255, 255, 255)
     RED = (255, 0, 0)
@@ -262,15 +231,10 @@ if __name__ == "__main__":
 
     sleep_ms = lambda x: sleep(x / 1000)
     stamp = epoch()
-    # Main loop
 
     awaiting = None
 
-    # ball.pos.x = width // 2
-    # ball.pos.y = height // 2
-
     while frenship.worldstate == {}:
-        # print("not present")
         print(f"main's worldstate: {frenship.worldstate}")
         sleep_ms(1000)
 
