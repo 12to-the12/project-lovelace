@@ -1,18 +1,25 @@
 import socket
-import msgpack
+
+# import msgpack
 
 # from ssl import SSLSocket as socket
 import ssl
 from time import sleep
+
 from msgpack import unpackb as deserialize
 from msgpack import packb as serialize
+# import marshal
+
+# from marshal import dumps as serialize
+# from marshal import loads as deserialize
 from time import time as epoch
 from timing import Pulse
 from spatial import ball
 from config import config
 
 sleep_ms = lambda x: sleep(x / 1000)
-import threading
+# import threading
+import _thread
 
 # # import pickle
 # from pickle import dumps as serialize
@@ -126,14 +133,17 @@ class Frenship:
     def launch_streams(self):
         global worldstate
         worldstate = {1: 2}
-        self.send_position_thread = threading.Thread(target=self.sending)
-        # this prevents threads from persisting past main
-        self.send_position_thread.daemon = True
-        self.send_position_thread.start()
+        # self.send_position_thread = threading.Thread(target=self.sending)
+        self.send_position_thread = _thread.start_new_thread(self.sending, ())
 
-        self.read_worldstate_thread = threading.Thread(target=self.receiving)
-        self.read_worldstate_thread.daemon = True
-        self.read_worldstate_thread.start()
+        # this prevents threads from persisting past main
+        # self.send_position_thread.daemon = True
+        # self.send_position_thread.start()
+
+        # self.read_worldstate_thread = threading.Thread(target=self.receiving)
+        self.read_worldstate_thread = _thread.start_new_thread(self.receiving, ())
+        # self.read_worldstate_thread.daemon = True
+        # self.read_worldstate_thread.start()
 
     def receiving(self):
         global worldstate

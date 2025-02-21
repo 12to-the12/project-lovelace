@@ -6,8 +6,12 @@ import threading
 from time import sleep
 from time import time as epoch
 import sys
+
 from msgpack import unpackb as deserialize
 from msgpack import packb as serialize
+
+# from marshal import dumps as serialize
+# from marshal import loads as deserialize
 from worldstate import worldstate
 
 sleep_ms = lambda x: sleep(x / 1000)

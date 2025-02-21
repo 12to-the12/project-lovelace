@@ -16,7 +16,7 @@ check:
 	mypy
 
 install: format
-	setup 3.12 uv
+	setup 3.13 uv
 	# .venv/bin/python src/main.py
 
 

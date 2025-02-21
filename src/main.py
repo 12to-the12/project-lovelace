@@ -1,17 +1,14 @@
-from os import times_result
 import socket
 import time
-import pygame
 import sys
 import asyncio
-import msgpack
-import threading
+
+# import msgpack
+# import threading
 from server import worldstate
 from spatial import SpatialVector, ball, SpatialObject, build_ball, mix
 from network import Frenship
 from timing import Pulse
-
-from pygame.time import Clock
 
 
 from time import time as epoch
@@ -21,22 +18,28 @@ from config import config
 
 
 frenship = Frenship()
-# print(worldstate)
-# quit()
-pygame.display.set_caption(str(frenship.connection_id))
 
+if config.desktop_mode:
+    import pygame
+    from pygame.time import Clock
 
-# Initialize Pygame
-pygame.init()
-readout_interval = 1000  # ms
-# Set up display
-width, height = 1500, 1000
-# screen = pygame.display.set_mode((width, height))
+    # print(worldstate)
+    # quit()
+    pygame.display.set_caption(str(frenship.connection_id))
 
-screen = pygame.display.set_mode((width, height), pygame.HWSURFACE | pygame.DOUBLEBUF)
-surface = pygame.Surface((width, height), pygame.HWSURFACE | pygame.DOUBLEBUF)
-print(pygame.display.get_driver())
-print(pygame.display.get_surface())
+    # Initialize Pygame
+    pygame.init()
+
+    # Set up display
+    width, height = 1500, 1000
+    # screen = pygame.display.set_mode((width, height))
+
+    screen = pygame.display.set_mode(
+        (width, height), pygame.HWSURFACE | pygame.DOUBLEBUF
+    )
+    surface = pygame.Surface((width, height), pygame.HWSURFACE | pygame.DOUBLEBUF)
+
+    clock = Clock()
 
 
 # Define colors
@@ -60,9 +63,19 @@ stamp = epoch()
 awaiting = None
 
 
-clock = Clock()
 # ball.pos.x = width // 2
 # ball.pos.y = height // 2
+
+
+def readout(last_timestamp, oldest_timestamp):
+    global stamp
+    if (epoch() - stamp) * 1000 > config.readout_interval_ms:
+        stamp = epoch()
+        # print(f"last age: {last_age * 1000:.0f}ms")
+        # print(f"oldest age: {oldest_age * 1000:.0f}ms")
+        print(f"worldstate age: {(epoch() - last_timestamp) * 1000:.0f}ms")
+        print(f"oldest worldstate age: {(epoch() - oldest_timestamp) * 1000:.0f}ms")
+        # print("\n\n\n\n")
 
 
 def draw_circles():
@@ -135,7 +148,8 @@ def draw_circles():
                 myball = build_ball(snapshots[before_candidate])
                 moved = (myball.pos.x, myball.pos.y)
             radius = 40 * 0.6**last_age
-            pygame.draw.circle(screen, (255, 126, 0), moved, radius)
+            if config.desktop_mode:
+                pygame.draw.circle(screen, (255, 126, 0), moved, radius)
 
         # future extrapolation
         # oldest age implied to be bigger than last age
@@ -149,7 +163,8 @@ def draw_circles():
 
             radius = 40 * 0.6**last_age
             if config.draw_time_dilated:
-                pygame.draw.circle(screen, (200, 200, 255), moved, radius)
+                if config.desktop_mode:
+                    pygame.draw.circle(screen, (200, 200, 255), moved, radius)
 
             # relic = (lastball.pos.x, lastball.pos.y)
             # radius = 35 * 0.6**last_age
@@ -163,13 +178,7 @@ def draw_circles():
         else:
             raise (Exception("unreachable state"))
 
-        if (epoch() - stamp) * 1000 > readout_interval:
-            stamp = epoch()
-            # print(f"last age: {last_age * 1000:.0f}ms")
-            # print(f"oldest age: {oldest_age * 1000:.0f}ms")
-            print(f"worldstate age: {(epoch() - last_timestamp) * 1000:.0f}ms")
-            print(f"oldest worldstate age: {(epoch() - oldest_timestamp) * 1000:.0f}ms")
-            # print("\n\n\n\n")
+        readout(last_timestamp, oldest_timestamp)
 
         # accelerated = (
         #     myball.pos.x + (age * (myball.vel.x + (age * myball.acc.x))),
@@ -185,7 +194,8 @@ def draw_circles():
         )
         radius = 30 * 0.5**real_last_age
         if config.draw_interpolated:
-            pygame.draw.circle(screen, (255, 209, 63), moved, radius)
+            if config.desktop_mode:
+                pygame.draw.circle(screen, (255, 209, 63), moved, radius)
 
         static = (
             lastball.pos.x,
@@ -193,7 +203,8 @@ def draw_circles():
         )
         radius = 20 * 0.3**real_last_age
         if config.draw_last_pos:
-            pygame.draw.circle(screen, (245, 243, 255), static, radius)
+            if config.desktop_mode:
+                pygame.draw.circle(screen, (245, 243, 255), static, radius)
 
 
 while frenship.worldstate == {}:
@@ -203,33 +214,48 @@ while frenship.worldstate == {}:
 
 print("starting gameloop")
 
+stampb = epoch()
+
+
+def clock_wait(fps):
+    global stampb
+    frame_time = 1 / fps
+    now = epoch()
+    elapsed = now - stampb
+    if elapsed < frame_time:
+        sleep(frame_time - elapsed)
+    stampb = now
+
+
 while True:
     # clock.tick(20)
+    clock_wait(20)
     start = epoch()
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.display.quit()
-            pygame.quit()
-            sys.exit()
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_LEFT:
-                left = True
-            if event.key == pygame.K_RIGHT:
-                right = True
-            if event.key == pygame.K_UP:
-                up = True
-            if event.key == pygame.K_DOWN:
-                down = True
-        if event.type == pygame.KEYUP:
-            if event.key == pygame.K_LEFT:
-                left = False
-            if event.key == pygame.K_RIGHT:
-                right = False
-            if event.key == pygame.K_UP:
-                up = False
-            if event.key == pygame.K_DOWN:
-                down = False
-    screen.fill(BLACK)
+    if config.desktop_mode:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.display.quit()
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_LEFT:
+                    left = True
+                if event.key == pygame.K_RIGHT:
+                    right = True
+                if event.key == pygame.K_UP:
+                    up = True
+                if event.key == pygame.K_DOWN:
+                    down = True
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_LEFT:
+                    left = False
+                if event.key == pygame.K_RIGHT:
+                    right = False
+                if event.key == pygame.K_UP:
+                    up = False
+                if event.key == pygame.K_DOWN:
+                    down = False
+        screen.fill(BLACK)
     ball.push(right, left, up, down)
 
     center = (
@@ -237,13 +263,15 @@ while True:
         ball.pos.y,
     )
     radius = 50
-    pygame.draw.circle(screen, (255, 56, 0), center, radius)
+    if config.desktop_mode:
+        pygame.draw.circle(screen, (255, 56, 0), center, radius)
     # Draw a ciK_LEFTrcle
     # if worldstate:
     #     print(worldstate)
 
     draw_circles()
     # Update the display
-    pygame.display.flip()
+    if config.desktop_mode:
+        pygame.display.flip()
     end = epoch()
     # asyncio.run(update())

@@ -6,6 +6,8 @@ class Config:
         self.draw_interpolated = False
         self.draw_time_dilated = True
         self.draw_self = True
+        self.desktop_mode = True
+        self.readout_interval_ms = 1000  # ms
 
         self.server_address = "lovelace.loganhillyer.me"
         self.snapshot_interval_ms = 20
