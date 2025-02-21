@@ -6,13 +6,13 @@ import socket
 import ssl
 from time import sleep
 
-from msgpack import unpackb as deserialize
-from msgpack import packb as serialize
+# from msgpack import unpackb as deserialize
+# from msgpack import packb as serialize
 
 # import marshal
 
-# from marshal import dumps as serialize
-# from marshal import loads as deserialize
+from marshal import dumps as serialize
+from marshal import loads as deserialize
 from time import time as epoch
 from timing import Pulse
 from spatial import ball
@@ -42,7 +42,7 @@ class Frenship:
         self.start = epoch()
         self.packets_received = 0
         self.bad_packets_received = 0
-        self.bad_packet_threshold_ms = 10
+        self.bad_packet_threshold_ms = 1.8
         self.init_tcp()
         self.init_udp()
 
@@ -57,7 +57,7 @@ class Frenship:
             self.tcp_send(epoch())
             packet = self.tcp_scan()
             ping = (epoch() - packet) * 1000
-            if ping > 10:
+            if ping > self.bad_packet_threshold_ms:
                 self.bad_packets_received += 1
                 badrate = self.bad_packets_received / (epoch() - self.start)
                 print(
@@ -95,7 +95,8 @@ class Frenship:
             print("attempting connection...")
             self.tcp_sock.connect((self.server_address, self.server_port))
             print("connection successful")
-            return deserialize(self.tcp_sock.recv(2048), strict_map_key=False)
+            # return deserialize(self.tcp_sock.recv(2048), strict_map_key=False)
+            return deserialize(self.tcp_sock.recv(2048))
         except:
             print("connection failed")
             pass
@@ -114,7 +115,8 @@ class Frenship:
         data = self.tcp_sock.recv(2048 * 8)
         try:
             # print(f"packet size received: {len(data)} bytes")
-            packet = deserialize(data, strict_map_key=False)
+            # packet = deserialize(data, strict_map_key=False)
+            packet = deserialize(data)
             self.packets_received += 1
             # print(
             #     f"received per second: {self.packets_received / (epoch() - self.start):.0f}"
@@ -235,7 +237,8 @@ class Frenship:
 
     def udp_scan(self):
         data, addr = self.downstream.recvfrom(1024)
-        data = msgpack.unpackb(data, strict_map_key=False)
+        # packet = deserialize(data, strict_map_key=False)
+        packet = deserialize(data)
         return data
 
     def udp_send(self, packet):

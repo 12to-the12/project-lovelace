@@ -8,7 +8,7 @@ class Config:
         self.draw_self = True
         self.desktop_mode = True
         self.readout_interval_ms = 1000  # ms
-        self.pingmode = False
+        self.pingmode = True
 
         self.server_address = "lovelace.loganhillyer.me"
         self.snapshot_interval_ms = 20

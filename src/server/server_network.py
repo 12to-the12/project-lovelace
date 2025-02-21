@@ -7,11 +7,11 @@ from time import sleep
 from time import time as epoch
 import sys
 
-from msgpack import unpackb as deserialize
-from msgpack import packb as serialize
+# from msgpack import unpackb as deserialize
+# from msgpack import packb as serialize
 
-# from marshal import dumps as serialize
-# from marshal import loads as deserialize
+from marshal import dumps as serialize
+from marshal import loads as deserialize
 from config import config
 from worldstate import worldstate
 
@@ -213,12 +213,14 @@ class network:
     def tcp_scan(self, sock):
         data = sock.recv(2048 * 4)
         try:
-            packet = deserialize(data, strict_map_key=False)
+            # packet = deserialize(data, strict_map_key=False)
+            packet = deserialize(data)
 
             return packet
         except Exception as e:
             try:
-                for packet in msgpack.unpackb(data, strict_map_key=False):
+                # for packet in msgpack.unpackb(data, strict_map_key=False):
+                for packet in msgpack.unpackb(data):
                     print(packet)
                 print("scan error")
                 print(f"{e}")
@@ -234,5 +236,7 @@ class network:
 
     def udp_scan(self, sock):
         data, (address, port) = sock.recvfrom(2048)
-        packet = deserialize(data, strict_map_key=False)
+        # packet = deserialize(data, strict_map_key=False)
+        packet = deserialize(data)
+
         return (packet, (address, port))
