@@ -13,6 +13,9 @@ class Config:
 
         self.server_address = "lovelace.loganhillyer.me"
         self.snapshot_interval_ms = 20
+        self.acc_factor = 1e3
+        self.sap = 0.5
+        self.fps = 30  #limiter
 
 
 config = Config()

@@ -1,6 +1,8 @@
 # from profile import timefunct, profile
-from time import sleep
+from time import sleep,sleep_us,sleep_ms
 from time import time as epoch
+from time import time_ns as epoch_ns
+
 
 import sys
 import socket
@@ -12,7 +14,7 @@ import asyncio
 # # import threading
 from spatial import ball, build_ball, mix
 import network
-from netcode import Frenship
+from netcode import Connection
 
 # print(machine.unique_id())
 # from time import time as epoch
@@ -40,10 +42,12 @@ class InputState:
 # cpu_frequency = machine.freq()
 
 
-def readout(last_timestamp, oldest_timestamp):
-    global stamp
-    if (epoch() - stamp) * 1000 > config.readout_interval_ms:
-        stamp = epoch()
+def readout(things):
+    global stamp_ns
+    if (epoch_ns() - stamp_ns)/1e6 > config.readout_interval_ms:
+        stamp_ns = epoch_ns()
+        print(things)
+        # for thing in things:print(thing)
         # print(f"last age: {last_age * 1000:.0f}ms")
         # print(f"oldest age: {oldest_age * 1000:.0f}ms")
         # print(f"worldstate age: {(epoch() - last_timestamp) * 1000:.0f}ms")
@@ -52,7 +56,7 @@ def readout(last_timestamp, oldest_timestamp):
 
 
 def draw_circles():
-    global stamp, config
+    global stamp_ns, config
     for ID in frenship.worldstate["players"].keys():
         if ID == frenship.connection_id and not config.draw_self:
             continue
@@ -177,7 +181,7 @@ def connect_to_wifi():
 
 # @timefunct
 def game_loop(inputstate):
-    lcd_set_color(255, 0, 255)
+    global erase
     # network io
     # control input
     # draw sprites
@@ -186,7 +190,7 @@ def game_loop(inputstate):
 
     # clock.tick(20)
     # clock_wait(100000)
-    start = epoch()
+    start = epoch_ns()
     if config.desktop_mode:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -213,41 +217,60 @@ def game_loop(inputstate):
                     inputstate.down = False
         screen.fill(BLACK)
     # ball.push_binary(inputstate.right, inputstate.left, inputstate.up, inputstate.down)
+    
+    lcd_set_color(0, 0, 0)
+    for coords in erase:
+        lcd_fill(*erase.pop(),10,10)
 
     ball.push(inputstate)
 
-    center = (
-        ball.pos.x,
-        ball.pos.y,
+    coords = (
+        int(ball.pos.x),
+        int(ball.pos.y),
     )
-    print(">")
-    print(inputstate)
-    print(f"{ball.acc.x} {ball.acc.y}")
-    print(f"{ball.vel.x} {ball.vel.y}")
-    print(f"{ball.pos.x} {ball.pos.y}")
-    print(center)
-    radius = 50
+    # print(">")
+    # print(inputstate)
+    # print(f"{ball.acc.x} {ball.acc.y}")
+    # print(f"{ball.vel.x} {ball.vel.y}")
+    # print(f"{ball.pos.x} {ball.pos.y}")
+    # print(coords)
+    
+    
 
     if config.desktop_mode:
+        radius = 50
         pygame.draw.circle(screen, (255, 56, 0), center, radius)
     else:
-        lcd_draw_box(
-            int(center[0]), int(center[1]), int(center[0] + 10), int(center[1] + 10)
-        )
+        lcd_set_color(255, 0, 255)
+        lcd_fill(*coords,10,10)
+        erase.insert(0,coords)
     # draw_circles()
     # Update the display
     if config.desktop_mode:
         pygame.display.flip()
-    end = epoch()
+    end = epoch_ns()
+    elapsed_ns = end-start
+    elapsed = elapsed_ns/1e9
+    target = 1/config.fps
+    diff = target-elapsed
+    if elapsed < target:
+
+        sleep_us(int(diff*1e6))
+        readout(f"fps: {1/elapsed}")
 
 
-def game():
+
+def game_init():
+    global erase,stamp_ns
+    stamp_ns=epoch_ns()
+    erase = []
 
     connect_to_wifi()
+    lcd_init()
     lcd_clear(0, 0, 0)
 
     print("starting network operations")
-    frenship = Frenship()
+    connection = Connection()
 
     # if config.desktop_mode:
     #     import pygame
@@ -286,4 +309,8 @@ def game():
 
     # # stampb = epoch()
     while True:
+        center = (
+        ball.pos.x,
+        ball.pos.y,
+        )
         game_loop(joystick.read())

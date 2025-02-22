@@ -1,4 +1,4 @@
-from game import game
+from game import game_init
 from profile import profile,joystick_demo
 from time import sleep
 from lcd import lcd_start_tone, lcd_stop_tone
@@ -15,4 +15,4 @@ from lcd import lcd_start_tone, lcd_stop_tone
 
 if __name__ == "__main__":
     # joystick_demo()
-    game()
+    game_init()

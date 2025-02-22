@@ -20,6 +20,9 @@ class SpatialObject:
         pos=None,
         vel=None,
         acc=None,
+        orientation=None,
+        rotational_velocity=None,
+        mass=None,
         bounds=(480, 320),
     ):
         self.width, self.height = bounds
@@ -33,15 +36,26 @@ class SpatialObject:
         if not acc:
             acc = SpatialVector()
             # acc = SpatialVector(dist(factor), dist(factor))
+        if not orientation:
+            orientation = 0
+        if not rotational_velocity: rotational_velocity=0    
+        if not mass: mass=0
+
         self.pos = pos
         self.vel = vel
         self.acc = acc
+        self.orientation = orientation
+        self.rotational_velocity = rotational_velocity
+        self.mass = mass
+
         self.acc_factor = config.acc_factor
         self.sap = config.sap
 
         # assert (type(self.acc.x) == int) or (type(self.acc.x) == float), type(
         #     self.acc.x
         # )
+
+        # orientation is encoded in radians counter clockwise
 
         self.last_updated_ns = epoch_ns()
 
@@ -95,6 +109,10 @@ class SpatialObject:
         if (not up) and (not down):
             ball.acc.y = 0
         self.apply()
+    def serialize(self):
+        pass
+    def draw(self):
+        pass
 
 
 def mix(a, a_weight, b, b_weight):

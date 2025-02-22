@@ -43,7 +43,7 @@ import _thread
 from machine import soft_reset as quit
 
 
-class Frenship:
+class Connection:
     def __init__(self):
         self.snapshot_interval_ms = config.snapshot_interval_ms  # ms
 
