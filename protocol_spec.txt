@@ -1,0 +1,35 @@
+structured data serialized over the wire with JSON
+
+Sprites have a serialize method
+player update to server:
+{
+    "timestamp":543223542543,
+    "playerstate":{
+        "location":(0,0,0),
+        "velocity":(0,0,0),
+        "acceleration":(0,0,0),
+        "health":000,
+        
+    }
+}
+
+
+
+worldstate update to player:
+{
+    "timestamp":40894390823423,
+    "worldstate":{
+        "sprites":{
+            "playerB":{
+                playerstate...
+            },
+            "playerC":{
+                playerstate...
+            }
+            "asteroid":{
+                entitystate...
+            }
+        }
+        
+    }
+}

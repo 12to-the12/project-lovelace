@@ -1,5 +1,8 @@
 from time import time as epoch
+from time import time_ns as epoch_ns
 from random import uniform
+
+from config import config
 
 dist = lambda x: uniform(-x, x)
 
@@ -17,34 +20,38 @@ class SpatialObject:
         pos=None,
         vel=None,
         acc=None,
-        bounds=(1500, 1000),
+        bounds=(480, 320),
     ):
         self.width, self.height = bounds
         factor = 1e2
         if not pos:
+            # pos = SpatialVector()
             pos = SpatialVector(uniform(0, self.width), uniform(0, self.height), 0)
         if not vel:
-            vel = SpatialVector(dist(factor), dist(factor))
+            vel = SpatialVector()
+            # vel = SpatialVector(dist(factor), dist(factor))
         if not acc:
-            acc = SpatialVector(dist(factor), dist(factor))
+            acc = SpatialVector()
+            # acc = SpatialVector(dist(factor), dist(factor))
         self.pos = pos
         self.vel = vel
         self.acc = acc
-        self.acc_factor = 1e3
+        self.acc_factor = config.acc_factor
+        self.sap = config.sap
 
         # assert (type(self.acc.x) == int) or (type(self.acc.x) == float), type(
         #     self.acc.x
         # )
 
-        self.last_updated = epoch()
+        self.last_updated_ns = epoch_ns()
 
     # the period since the values were last updated
     @property
     def age(self):
-        timestamp = epoch()
-        elapsed = timestamp - self.last_updated
-        self.last_updated = timestamp
-        return elapsed
+        timestamp_ns = epoch_ns()
+        elapsed_ns = timestamp_ns - self.last_updated_ns
+        self.last_updated_ns = timestamp_ns
+        return elapsed_ns / 1e9
 
     def advance(self, time):
         self.vel.x += self.acc.x * time
@@ -58,14 +65,19 @@ class SpatialObject:
         self.pos.x %= self.width
         self.pos.y %= self.height
 
-        self.vel.x *= 0.5**time
-        self.vel.y *= 0.5**time
-        self.vel.z *= 0.5**time
+        self.vel.x *= self.sap**time
+        self.vel.y *= self.sap**time
+        self.vel.z *= self.sap**time
 
     def apply(self):
         self.advance(self.age)
 
-    def push(self, right, left, up, down):
+    def push(self, vector):
+        ball.acc.x = vector[0] * self.acc_factor
+        ball.acc.y = vector[1] * self.acc_factor
+        self.apply()
+
+    def push_binary(self, right, left, up, down):
         if right:
             ball.acc.x = self.acc_factor
         if left:

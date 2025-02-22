@@ -41,6 +41,11 @@ push-server: stop-server
 start-server: push-server
 	ssh lovelace "tmux new-session -d -s 'server' ./server/main.py"
 	ssh lovelace "tmux ls"
+
+start-server-attached: push-server
+	ssh lovelace "~/server/main.py"
+
+
 environment-install:
 	wine ${wPython}/python.exe ${wPython}/Scripts/pip.exe install -r requirements.txt
 

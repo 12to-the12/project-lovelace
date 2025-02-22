@@ -1,5 +1,6 @@
 from os import times_result
-import ssl
+
+# import ssl
 
 # import msgpack
 import socket
@@ -11,8 +12,23 @@ import sys
 # from msgpack import unpackb as deserialize
 # from msgpack import packb as serialize
 
-from marshal import dumps as serialize
-from marshal import loads as deserialize
+# from marshal import dumps as serialize
+# from marshal import loads as deserialize
+
+from json import dumps
+from json import loads as deserialize
+
+
+def serialize(packet):
+    # if isinstance(packet, str):
+    #     print("encoding string to bytes")
+    #     packet = packet.encode()
+    #     print(packet)
+    data = dumps(packet)
+    data = bytes(data, encoding="utf-8")
+    return data
+
+
 from config import config
 from worldstate import worldstate
 
@@ -35,19 +51,19 @@ class network:
         self.queue = []
         # context = ssl.create_default_context()
 
-        self.context = ssl.SSLContext(ssl.PROTOCOL_TLS)
-        self.context.load_cert_chain(
-            certfile="/home/logan/certs/rootCA.pem",
-            keyfile="/home/logan/certs/rootCA.key",
-        )
+        # self.context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+        # self.context.load_cert_chain(
+        #     certfile="/home/logan/certs/rootCA.pem",
+        #     keyfile="/home/logan/certs/rootCA.key",
+        # )
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
         self.sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, True)
         self.sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK, False)
 
-        self.sock = self.context.wrap_socket(self.sock, server_side=True)
-        print("attempting bind:")
+        # self.sock = self.context.wrap_socket(self.sock, server_side=True)
+        print("attempting tcp socket bind:")
         try:
             self.sock.bind((self.incoming_addr, self.tcp_port))
             print("socket bound successfully")
@@ -58,15 +74,19 @@ class network:
         self.udp_listening_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         try:
             self.udp_listening_socket.bind(("", self.udp_listening_port))
+            print("UDP socket bound successfully")
         except socket.error as message:
             print("Bind failed. Error Code : " + str(message))
             sys.exit()
+        print("starting udp thread...")
 
         self.udp_update_channel = threading.Thread(
             target=self.udp_update, args=(self.udp_listening_socket,)
         )
         self.udp_update_channel.daemon = True
         self.udp_update_channel.start()
+
+        print("starting new connection handler...")
 
         self.handle_new_connections = threading.Thread(target=self.await_connections)
         self.handle_new_connections.start()
@@ -208,7 +228,17 @@ class network:
 
     def tcp_send(self, sock, packet):
         # print("sending data...")
-        sock.sendall(serialize(packet))
+        try:
+            data = serialize(packet)
+            try:
+                sock.sendall(serialize(packet))
+            except Exception as e:
+                print(f"{data=}")
+                print(f"{type(data)=}")
+                raise (Exception(e))
+        except Exception as e:
+            raise (Exception(e))
+
         # print("data sent")
 
     def tcp_scan(self, sock):

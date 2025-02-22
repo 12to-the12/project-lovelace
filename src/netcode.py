@@ -1,15 +1,36 @@
 import socket
-import ssl
+
+# import ssl
 from time import sleep
 
 # from msgpack import unpackb as deserialize
 # from msgpack import packb as serialize
 
 # import marshal
+# from marshal import dumps as serialize
+# from marshal import loads as deserialize
 
-from marshal import dumps as serialize
-from marshal import loads as deserialize
+# import umarshal
+
+from ujson import dumps
+from ujson import loads as deserialize
+import ntptime
+
+
+def serialize(packet):
+    # if isinstance(packet, str):
+    #     print("encoding string as bytes object")
+    #     data = packet.encode()
+    #     # bytes(data, encoding="utf-8")
+    # print(packet)
+    data = dumps(packet)
+    data = data.encode()
+    return data
+
+
 from time import time as epoch
+
+
 from timing import Pulse
 from spatial import ball
 from config import config
@@ -17,6 +38,10 @@ from config import config
 sleep_ms = lambda x: sleep(x / 1000)
 # import threading
 import _thread
+
+
+from machine import soft_reset as quit
+
 
 class Frenship:
     def __init__(self):
@@ -29,13 +54,18 @@ class Frenship:
         self.packets_received = 0
         self.bad_packets_received = 0
         self.bad_packet_threshold_ms = 1.8
+        self.syncronize_time()
         self.init_tcp()
         self.init_udp()
 
         if config.pingmode:
             self.ping_mode()
 
-        self.launch_streams()
+        if config.single_threaded_io:
+            self.single_threaded_io()
+        else:
+            print("launching streams")
+            self.launch_streams()
 
     def ping_mode(self):
         while True:
@@ -50,38 +80,71 @@ class Frenship:
                 )
 
     def init_tcp(self):
+        # context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+        # context.load_verify_locations("rootCA.pem")
 
-        context = ssl.SSLContext(ssl.PROTOCOL_TLS)
-        context.load_verify_locations("rootCA.pem")
-
+        # self.tcp_sock = socket.socket()
         self.tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.tcp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
-        self.tcp_sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, True)
+        # self.tcp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
+        # self.tcp_sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, True)
         # self.tcp_sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK, False)
 
         self.server_port = 5002
-        self.tcp_sock = context.wrap_socket(
-            self.tcp_sock, server_hostname=self.server_address
-        )
+        # self.tcp_sock = context.wrap_socket(
+        #     self.tcp_sock, server_hostname=self.server_address
+        # )
 
         self.connection_id = self.tcp_connect()
         print(f"assigned connection ID: {self.connection_id}")
 
+    def syncronize_time(self):
+        from time import localtime
+
+        print("syncronizing time...")
+        # print(ntptime.time())
+        print(localtime())
+        ntptime.settime()
+        print(localtime())
+
     def tcp_connect(self):
+        # try:
+        print("attempting connection...")
+        # if config.desktop_mode:
+        #     self.tcp_sock.connect((self.server_address, self.server_port))
+        # else:
+        print(self.server_address)
+        print(self.server_port)
+
+        addr = socket.getaddrinfo(
+            self.server_address, self.server_port, 0, socket.SOCK_STREAM
+        )[0][-1]
+        # addr = socket.getaddrinfo("www.micropython.org", 80, 0, socket.SOCK_STREAM)[0][
+        #     -1
+        # ]
+        # print(addr)
+        print("address fetched")
+        self.tcp_sock.connect(addr)
+
+        print("connection successful")
+        # return deserialize(self.tcp_sock.recv(2048), strict_map_key=False)
+        data = self.tcp_sock.recv(2048)
         try:
-            print("attempting connection...")
-            self.tcp_sock.connect((self.server_address, self.server_port))
-            print("connection successful")
-            # return deserialize(self.tcp_sock.recv(2048), strict_map_key=False)
-            return deserialize(self.tcp_sock.recv(2048))
+            packet = deserialize(data)
+            return packet
         except:
-            print("connection failed")
-            pass
+            print(data)
+            quit()
+
+        # except Exception as e:
+        #     print("connection failed")
+        #     raise(Exception(e))
+        #     quit()
+        #     pass
 
     def tcp_send(self, data):
         try:
             self.tcp_sock.sendall(serialize(data))
-        except socket.error as e:
+        except Exception as e:
             print(e)
             return None
 
@@ -95,6 +158,9 @@ class Frenship:
             return packet
         except Exception as e:
             raise (Exception(e))
+
+    def single_threaded_io(self):
+        pass
 
     def launch_streams(self):
         global worldstate
@@ -188,3 +254,7 @@ class Frenship:
         self.udp_sender_sock.sendto(
             data, (self.server_address, self.CLIENT_TO_SERVER_PORT)
         )
+
+
+if __name__ == "__main__":
+    print("This is the networking file!")

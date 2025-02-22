@@ -1,0 +1,7 @@
+# pure python
+baud_rate set to 1_000_000_000;Writing 10 columns pixel by pixel; 3634.00ms
+baud_rate set to -1;Writing 10 columns pixel by pixel; 3608.00ms
+
+solid_fill;Writing 10 columns pixel by pixel; 40ms
+
+native;26ms
