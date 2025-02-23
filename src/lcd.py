@@ -1,8 +1,9 @@
 # Copyright (c) 2025 by Alfred Morgan <alfred@54.org>
 # Copyright (c) 2025 by Mitchell Tucker
+# Copyright (c) 2025 by Logan Hillyer
 # License https://opensource.org/license/isc-license-txt
 # ST7796SU1 https://www.displayfuture.com/Display/datasheet/controller/ST7796s.pdf
-# Version: 0.0.3
+# Version: 0.0.4
 
 from machine import ADC, Pin, PWM, SPI
 from utime import sleep
@@ -16,8 +17,10 @@ spi = SPI(0, baudrate=-1, sck=Pin(2), mosi=Pin(3), miso=Pin(4))
 Pin(5, Pin.OUT or Pin.PULL_DOWN)  # Chip select (pull down for dedicated spi)
 dc = Pin(6, Pin.OUT)  # Data / Command
 rst = Pin(7, Pin.OUT)  # Reset
-
-
+joy_x = ADC(Pin(26, pull=None))
+joy_y = ADC(Pin(27, pull=None))
+button_a = Pin(15, Pin.IN)
+button_b = Pin(14, Pin.IN)
 width = 480
 height = 320
 r = 0
@@ -201,6 +204,53 @@ def lcd_draw_v_line(x, y1, y2):
     else:
         lcd_fill(x, y2, 1, -h)
 
+def lcd_draw_line(x1, y1, x2, y2):
+    """
+    Draw a line from (x1, y1) to (x2, y2).
+    Uses direct fills for horizontal/vertical lines,
+    and a Bresenham-like approach for all other lines.
+    """
+    
+    # 1) Purely horizontal line
+    if y1 == y2:
+        w = x2 - x1
+        if w >= 0:
+            lcd_fill(x1, y1, w, 1)
+        else:
+            lcd_fill(x2, y1, -w, 1)
+        return
+
+    # 2) Purely vertical line
+    if x1 == x2:
+        h = y2 - y1
+        if h >= 0:
+            lcd_fill(x1, y1, 1, h)
+        else:
+            lcd_fill(x1, y2, 1, -h)
+        return
+
+    # 3) Bresenham-like line for all other slopes
+    dx = abs(x2 - x1)
+    dy = abs(y2 - y1)
+    sx = 1 if x1 < x2 else -1
+    sy = 1 if y1 < y2 else -1
+    err = dx - dy
+
+    while True:
+        # Draw a single pixel using 1-pixel-wide fill
+        lcd_fill(x1, y1, 1, 1)
+
+        if x1 == x2 and y1 == y2:
+            break
+
+        e2 = 2 * err
+        if e2 > -dy:
+            err -= dy
+            x1 += sx
+        if e2 < dx:
+            err += dx
+            y1 += sy
+
 
 def lcd_draw_box(x1, y1, x2, y2):
     lcd_draw_h_line(x1, y1, x2)  # top
@@ -216,3 +266,98 @@ def lcd_start_tone(frequency, volume):
 
 def lcd_stop_tone():
     beeper.duty_u16(0)  # Turn off the beeper after the duration
+
+
+FONT_5x7 = {
+    ' ': [0x00, 0x00, 0x00, 0x00, 0x00],
+    'A': [0x7E, 0x09, 0x09, 0x09, 0x7E],
+    'B': [0x7F, 0x49, 0x49, 0x49, 0x36],
+    'C': [0x3E, 0x41, 0x41, 0x41, 0x22],
+    'D': [0x7F, 0x41, 0x41, 0x22, 0x1C],
+    'E': [0x7F, 0x49, 0x49, 0x49, 0x41],
+    'F': [0x7F, 0x09, 0x09, 0x09, 0x01],
+    'G': [0x3E, 0x41, 0x49, 0x49, 0x7A],
+    'H': [0x7F, 0x08, 0x08, 0x08, 0x7F],
+    'I': [0x00, 0x41, 0x7F, 0x41, 0x00],
+    'J': [0x20, 0x40, 0x41, 0x3F, 0x01],
+    'K': [0x7F, 0x08, 0x14, 0x22, 0x41],
+    'L': [0x7F, 0x40, 0x40, 0x40, 0x40],
+    'M': [0x7F, 0x02, 0x04, 0x02, 0x7F],
+    'N': [0x7F, 0x04, 0x08, 0x10, 0x7F],
+    'O': [0x3E, 0x41, 0x41, 0x41, 0x3E],
+    'P': [0x7F, 0x09, 0x09, 0x09, 0x06],
+    'Q': [0x3E, 0x41, 0x51, 0x21, 0x5E],
+    'R': [0x7F, 0x09, 0x19, 0x29, 0x46],
+    'S': [0x46, 0x49, 0x49, 0x49, 0x31],
+    'T': [0x01, 0x01, 0x7F, 0x01, 0x01],
+    'U': [0x3F, 0x40, 0x40, 0x40, 0x3F],
+    'V': [0x1F, 0x20, 0x40, 0x20, 0x1F],
+    'W': [0x3F, 0x40, 0x38, 0x40, 0x3F],
+    'X': [0x63, 0x14, 0x08, 0x14, 0x63],
+    'Y': [0x03, 0x04, 0x78, 0x04, 0x03],
+    'Z': [0x61, 0x51, 0x49, 0x45, 0x43],
+    '0': [0x3E, 0x51, 0x49, 0x45, 0x3E],
+    '1': [0x00, 0x42, 0x7F, 0x40, 0x00],
+    '2': [0x62, 0x51, 0x49, 0x49, 0x46],
+    '3': [0x22, 0x41, 0x49, 0x49, 0x36],
+    '4': [0x18, 0x14, 0x12, 0x7F, 0x10],
+    '5': [0x27, 0x45, 0x45, 0x45, 0x39],
+    '6': [0x3E, 0x49, 0x49, 0x49, 0x32],
+    '7': [0x01, 0x71, 0x09, 0x05, 0x03],
+    '8': [0x36, 0x49, 0x49, 0x49, 0x36],
+    '9': [0x26, 0x49, 0x49, 0x49, 0x3E],
+    '.': [0x00, 0x00, 0x60, 0x60, 0x00],
+    ',': [0x00, 0x80, 0x60, 0x20, 0x00],
+    '!': [0x00, 0x00, 0x7D, 0x00, 0x00],
+    '?': [0x02, 0x01, 0x51, 0x09, 0x06],
+    '-': [0x08, 0x08, 0x08, 0x08, 0x08],
+    '+': [0x08, 0x08, 0x3E, 0x08, 0x08],
+    '/': [0x20, 0x10, 0x08, 0x04, 0x02],
+    ':': [0x00, 0x36, 0x36, 0x00, 0x00],
+    ';': [0x00, 0x80, 0x76, 0x36, 0x00],
+    '\'': [0x00, 0x01, 0x07, 0x00, 0x00],
+    '\"': [0x00, 0x03, 0x00, 0x03, 0x00]
+}
+
+
+def lcd_draw_char(x, y, ch, color=(255,255,255)):
+    """
+    Draw a single 5x7 character at position (x, y) in 'color'.
+    """
+    # If character not in our FONT_5x7, display a blank or skip
+    if ch not in FONT_5x7:
+        return
+    
+    columns = FONT_5x7[ch]  # 5 columns of bitmap data
+    lcd_set_color(*color)
+
+    # Each element of 'columns' is a byte, each bit is one pixel
+    # top row is LSB (bit 0), bottom row is bit 6 in 5x7 font
+    for col_index in range(5):
+        col_data = columns[col_index]  # Byte for this column
+        for row_index in range(7):
+            # Check if the bit is set
+            if (col_data >> row_index) & 1:
+                # Draw pixel at the correct location
+                px = x + col_index
+                py = y + row_index
+                lcd_draw_pixel(px, py)
+
+
+def lcd_draw_text(x, y, text, color=(255,255,255)):
+    """
+    Draw a string at (x, y) with the given color. 
+    Each character is 6 pixels wide (5 for the glyph + 1 space).
+    """
+    cx = x
+    for ch in text:
+        lcd_draw_char(cx, y, ch, color)
+        cx += 6  # Move right by 6 pixels for the next character
+
+def lcd_blit_file(filename, x, y, w, h):
+    with open(filename, 'rb') as f:
+        data = f.read(w * h * 3)
+    lcd_set_range(x, y, w, h)
+    lcd_draw()
+    spi.write(data)
+    
