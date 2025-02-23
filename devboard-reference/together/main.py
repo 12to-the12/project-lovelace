@@ -1,0 +1,2 @@
+import together
+together.main()
