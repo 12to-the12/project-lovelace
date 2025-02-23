@@ -1,5 +1,5 @@
 from game import game_init
-from profile import profile,joystick_demo
+from profile import profile, joystick_demo
 from time import sleep
 from lcd import lcd_start_tone, lcd_stop_tone
 

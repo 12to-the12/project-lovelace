@@ -1,5 +1,5 @@
 # from profile import timefunct, profile
-from time import sleep,sleep_us,sleep_ms
+from time import sleep, sleep_us, sleep_ms
 from time import time as epoch
 from time import time_ns as epoch_ns
 
@@ -44,7 +44,7 @@ class InputState:
 
 def readout(things):
     global stamp_ns
-    if (epoch_ns() - stamp_ns)/1e6 > config.readout_interval_ms:
+    if (epoch_ns() - stamp_ns) / 1e6 > config.readout_interval_ms:
         stamp_ns = epoch_ns()
         print(things)
         # for thing in things:print(thing)
@@ -217,10 +217,10 @@ def game_loop(inputstate):
                     inputstate.down = False
         screen.fill(BLACK)
     # ball.push_binary(inputstate.right, inputstate.left, inputstate.up, inputstate.down)
-    
+
     lcd_set_color(0, 0, 0)
     for coords in erase:
-        lcd_fill(*erase.pop(),10,10)
+        lcd_fill(*erase.pop(), 10, 10)
 
     ball.push(inputstate)
 
@@ -234,35 +234,31 @@ def game_loop(inputstate):
     # print(f"{ball.vel.x} {ball.vel.y}")
     # print(f"{ball.pos.x} {ball.pos.y}")
     # print(coords)
-    
-    
 
     if config.desktop_mode:
         radius = 50
         pygame.draw.circle(screen, (255, 56, 0), center, radius)
     else:
         lcd_set_color(255, 0, 255)
-        lcd_fill(*coords,10,10)
-        erase.insert(0,coords)
+        lcd_fill(*coords, 10, 10)
+        erase.insert(0, coords)
     # draw_circles()
     # Update the display
     if config.desktop_mode:
         pygame.display.flip()
     end = epoch_ns()
-    elapsed_ns = end-start
-    elapsed = elapsed_ns/1e9
-    target = 1/config.fps
-    diff = target-elapsed
+    elapsed_ns = end - start
+    elapsed = elapsed_ns / 1e9
+    target = 1 / config.fps
+    diff = target - elapsed
     if elapsed < target:
-
-        sleep_us(int(diff*1e6))
-        readout(f"fps: {1/elapsed}")
-
+        sleep_us(int(diff * 1e6))
+        readout(f"fps: {1 / elapsed}")
 
 
 def game_init():
-    global erase,stamp_ns
-    stamp_ns=epoch_ns()
+    global erase, stamp_ns
+    stamp_ns = epoch_ns()
     erase = []
 
     connect_to_wifi()
@@ -310,7 +306,7 @@ def game_init():
     # # stampb = epoch()
     while True:
         center = (
-        ball.pos.x,
-        ball.pos.y,
+            ball.pos.x,
+            ball.pos.y,
         )
         game_loop(joystick.read())

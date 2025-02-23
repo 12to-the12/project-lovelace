@@ -65,7 +65,7 @@ def profile():
         # print(f"time: {time_s:.2f}")
         elapsed_ms = end_time - start_time
         print(f"{elapsed_ms:5.2f}ms")
-        print(f"{(320*10)/(elapsed_ms/1_000):5.2f} pixels per second")
+        print(f"{(320 * 10) / (elapsed_ms / 1_000):5.2f} pixels per second")
 
 
 # def timefunct(funct):

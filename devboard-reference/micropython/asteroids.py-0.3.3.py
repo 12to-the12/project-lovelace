@@ -9,9 +9,9 @@ from lcd import *
 import _thread
 from math import atan2, degrees, pi, cos, sin
 
-background = (0,0,0)
+background = (0, 0, 0)
 
-sprites = [] # all sprites
+sprites = []  # all sprites
 stars = []
 wave_counter = 1
 beeperLock = _thread.allocate_lock()
@@ -19,22 +19,23 @@ beeperLock = _thread.allocate_lock()
 died = False
 holdPlay = False
 
-#Sound 
+# Sound
 volume = 20000
+
 
 class Sprite:
     name = ""
     health = 0
     damage = 10
-    x = 0.
-    y = 0.
-    vx = 0.
-    vy = 0.
+    x = 0.0
+    y = 0.0
+    vx = 0.0
+    vy = 0.0
     w = 1
     h = 1
-    color = (0,0,0)
+    color = (0, 0, 0)
 
-    def __init__(self, name = "", color=None):
+    def __init__(self, name="", color=None):
         self.name = name
         self.color = color or (randint(0, 255), randint(0, 255), randint(0, 255))
         sprites.append(self)
@@ -82,18 +83,16 @@ class Ship(Sprite):
         if self.bulletCount >= 10:
             return
         self.bulletCount += 1
-        bullet = Bullet(f"Bullet {self.bulletCount}", color=(255,255,255))
+        bullet = Bullet(f"Bullet {self.bulletCount}", color=(255, 255, 255))
         bullet.ship = self
         v = sqrt(self.vx**2 + self.vy**2)
         bullet.x = self.x
         bullet.y = self.y
         bullet.vx = self.vx / v * 5 + self.vx
         bullet.vy = self.vy / v * 5 + self.vy
-        fire_beep(500,0.01)
-
+        fire_beep(500, 0.01)
 
     def draw(self):
-
         angle = atan2(self.vy, self.vx)
 
         # Set draw color to the ship's color
@@ -108,19 +107,19 @@ class Ship(Sprite):
         # Calculate the 3 corner points of the triangle
         tip_x = center_x + int(size * cos(angle))
         tip_y = center_y + int(size * sin(angle))
-        left_x = center_x + int(size * cos(angle + 2*pi/3))
-        left_y = center_y + int(size * sin(angle + 2*pi/3))
-        right_x = center_x + int(size * cos(angle - 2*pi/3))
-        right_y = center_y + int(size * sin(angle - 2*pi/3))
+        left_x = center_x + int(size * cos(angle + 2 * pi / 3))
+        left_y = center_y + int(size * sin(angle + 2 * pi / 3))
+        right_x = center_x + int(size * cos(angle - 2 * pi / 3))
+        right_y = center_y + int(size * sin(angle - 2 * pi / 3))
 
         lcd_set_color(*self.color)
         lcd_draw_h_line(int(self.x), int(self.y), int(self.x) + self.w - 1)
         lcd_draw_h_line(int(self.x), int(self.y) + self.h - 1, int(self.x) + self.w - 1)
-        
+
         midX = int(self.x) + self.w // 2 - 1
         if midX < width:
             lcd_draw_v_line(midX, int(self.y), int(self.y) + self.h - 1)
-        
+
         # Draw the triangle
         lcd_draw_line(tip_x, tip_y, left_x, left_y)
         lcd_draw_line(left_x, left_y, right_x, right_y)
@@ -130,8 +129,9 @@ class Ship(Sprite):
         spawnExplosion(self.x, self.y, 25, self.color)
         super().destroy()
 
+
 class Bullet(Sprite):
-    ship:Ship | None = None
+    ship: Ship | None = None
     health = 100
     w = 3
     h = 3
@@ -150,6 +150,7 @@ class Bullet(Sprite):
         lcd_set_color(*self.color)
         lcd_fill(int(self.x), int(self.y), self.w, self.h)
 
+
 class Asteroid(Sprite):
     health = 100
     maxHealth = 100
@@ -159,7 +160,7 @@ class Asteroid(Sprite):
     tag = 1 << 2
     angle = 0
     spin_speed = 2  # degrees per frame (if you want it spinning)
-    
+
     def draw(self):
         lcd_set_color(*self.color)
         lcd_draw_h_line(int(self.x), int(self.y), int(self.x) + self.w - 1)
@@ -170,12 +171,12 @@ class Asteroid(Sprite):
 
     def takeDamage(self, dmg):
         super().takeDamage(dmg)
-        
+
         healthPercent = self.health / self.maxHealth
         redDark = 255 - 180
         total = (healthPercent * redDark) + 180
- 
-        self.color = (int(total) , 0, 0)
+
+        self.color = (int(total), 0, 0)
 
     def destroy(self):
         super().destroy()
@@ -183,11 +184,12 @@ class Asteroid(Sprite):
         spawnExplosion(self.x, self.y, n, self.color)
         checkGameHasEnded()
 
+
 class Fragment(Bullet):
     health = 30
     damage = 0
 
- 
+
 def spawnExplosion(x, y, n=10, color=(200, 0, 0)):
     print("Exploion")
     for _ in range(n):
@@ -197,7 +199,7 @@ def spawnExplosion(x, y, n=10, color=(200, 0, 0)):
         part.vx = uniform(-10, 10)
         part.vy = uniform(-10, 10)
         part.color = color
-    
+
 
 class Boss(Asteroid):
     def draw(self):
@@ -208,7 +210,7 @@ class Boss(Asteroid):
         # and use half of that as the radius
         radius = self.w // 2
 
-        # Calculate the center. 
+        # Calculate the center.
         # (x, y) is usually top-left, so center is offset by half width/height
         cx = int(self.x) + radius
         cy = int(self.y) + radius
@@ -225,7 +227,8 @@ class Star:
     y = 0
     c = 0
 
-def play_tone(frequency, duration, volume = volume,release = True):
+
+def play_tone(frequency, duration, volume=volume, release=True):
     """
     Play a tone on the beeper pin.
     :param frequency: Frequency of the tone in Hz.
@@ -235,7 +238,7 @@ def play_tone(frequency, duration, volume = volume,release = True):
     lcd_start_tone(frequency, volume)
     sleep(duration)  # Play for the given duration
     lcd_stop_tone()
-    if(release):
+    if release:
         beeperLock.release()
 
 
@@ -245,7 +248,7 @@ def draw_circle_approx(cx, cy, r, segments=5):
     (Higher 'segments' means a smoother circle.)
     """
     angle_step = 2 * pi / segments
-    
+
     # Start at angle = 0
     x0 = cx + r
     y0 = cy
@@ -263,13 +266,16 @@ def fire_beep(frequency, duration):
     if beeperLock.acquire(False):  # Try to acquire the beeperLock without blocking
         _thread.start_new_thread(play_tone, (frequency, duration))  # Start the thread
 
+
 def crash_beep(frequency):
     if beeperLock.acquire(False):  # Try to acquire the beeperLock without blocking
         _thread.start_new_thread(play_tone, (frequency, 0.05))  # Start the thread
 
+
 def threaded_beep():
     if beeperLock.acquire(False):  # Try to acquire the beeperLock without blocking
         _thread.start_new_thread(hitSound, ())  # Start the thread
+
 
 def play_music():
     global holdPlay
@@ -285,7 +291,7 @@ def play_music():
         (784, 0.2),  # G
         (880, 0.2),  # A
         (988, 0.2),  # B
-        (1046, 0.4), # High C (longer)
+        (1046, 0.4),  # High C (longer)
     ]
     for freq, dur in notes:
         # 'volume' is assumed to be a global or previously defined variable
@@ -296,20 +302,21 @@ def play_music():
     # Finally, release the lock after the scale finishes
     beeperLock.release()
     holdPlay = False
-    
+
 
 def moveStars():
     dx = 1
     dy = 1
     lcd_set_color(0, 0, 0)
     for star in stars:
-        lcd_draw_pixel(star.x, star.y) # erase stars
+        lcd_draw_pixel(star.x, star.y)  # erase stars
         star.x += dx
         if star.x > width:
             star.x = 0
         star.y += dy
         if star.y > height:
             star.y = 0
+
 
 def winning_sound():
     """
@@ -318,23 +325,20 @@ def winning_sound():
     """
     # Short alternating pattern
     if beeperLock.acquire(False):  # Try to acquire the beeperLock without blocking
-        _thread.start_new_thread(play_music,())  # Start the thread
-
+        _thread.start_new_thread(play_music, ())  # Start the thread
 
 
 def is_collision(x1_1, y1_1, x2_1, y2_1, x1_2, y1_2, x2_2, y2_2):
-    return (
-        x1_1 < x2_2 and
-        x2_1 > x1_2 and
-        y1_1 < y2_2 and
-        y2_1 > y1_2
-    )
+    return x1_1 < x2_2 and x2_1 > x1_2 and y1_1 < y2_2 and y2_1 > y1_2
+
 
 def checkCollisions():
     global died
-    for i in reversed(range(len(sprites))):  # Iterate in reverse to safely remove elements
+    for i in reversed(
+        range(len(sprites))
+    ):  # Iterate in reverse to safely remove elements
         object_check = sprites[i]
-        for v in range(0,i):  # Check against all previous sprites
+        for v in range(0, i):  # Check against all previous sprites
             object_check_with = sprites[v]
 
             value = object_check.tag | object_check_with.tag
@@ -343,44 +347,73 @@ def checkCollisions():
             if value == (Asteroid.tag | Bullet.tag):
                 # Calculate bounding boxes
                 asteroid_x1, asteroid_y1 = object_check.x, object_check.y
-                asteroid_x2, asteroid_y2 = object_check.x + object_check.w, object_check.y + object_check.h
+                asteroid_x2, asteroid_y2 = (
+                    object_check.x + object_check.w,
+                    object_check.y + object_check.h,
+                )
 
                 bullet_x1, bullet_y1 = object_check_with.x, object_check_with.y
-                bullet_x2, bullet_y2 = object_check_with.x + object_check_with.w, object_check_with.y + object_check_with.h
+                bullet_x2, bullet_y2 = (
+                    object_check_with.x + object_check_with.w,
+                    object_check_with.y + object_check_with.h,
+                )
 
                 # Check for collision
-                if is_collision(bullet_x1, bullet_y1, bullet_x2, bullet_y2,
-                                asteroid_x1, asteroid_y1, asteroid_x2, asteroid_y2):
-                    object_check.takeDamage(object_check_with.damage) # Damage object 1
-                    object_check_with.takeDamage(object_check.damage) # Damage object 2
+                if is_collision(
+                    bullet_x1,
+                    bullet_y1,
+                    bullet_x2,
+                    bullet_y2,
+                    asteroid_x1,
+                    asteroid_y1,
+                    asteroid_x2,
+                    asteroid_y2,
+                ):
+                    object_check.takeDamage(object_check_with.damage)  # Damage object 1
+                    object_check_with.takeDamage(object_check.damage)  # Damage object 2
 
                     threaded_beep()
                     return
             # Check for Ship and Asteroid
             if value == (Ship.tag | Asteroid.tag):
-                 # Calculate bounding boxes
+                # Calculate bounding boxes
                 asteroid_x1, asteroid_y1 = object_check.x, object_check.y
-                asteroid_x2, asteroid_y2 = object_check.x + object_check.w, object_check.y + object_check.h
+                asteroid_x2, asteroid_y2 = (
+                    object_check.x + object_check.w,
+                    object_check.y + object_check.h,
+                )
 
                 ship_x1, ship_y1 = object_check_with.x, object_check_with.y
-                ship_x2, ship_y2 = object_check_with.x + object_check_with.w, object_check_with.y + object_check_with.h
+                ship_x2, ship_y2 = (
+                    object_check_with.x + object_check_with.w,
+                    object_check_with.y + object_check_with.h,
+                )
 
-                if is_collision(asteroid_x1, asteroid_y1, asteroid_x2, asteroid_y2,
-                                ship_x1, ship_y1, ship_x2, ship_y2):
-                   
-                    object_check.takeDamage(object_check_with.damage) # Damage object 1
-                    object_check_with.takeDamage(object_check.damage) # Damage object 2
-                    #died = True
+                if is_collision(
+                    asteroid_x1,
+                    asteroid_y1,
+                    asteroid_x2,
+                    asteroid_y2,
+                    ship_x1,
+                    ship_y1,
+                    ship_x2,
+                    ship_y2,
+                ):
+                    object_check.takeDamage(object_check_with.damage)  # Damage object 1
+                    object_check_with.takeDamage(object_check.damage)  # Damage object 2
+                    # died = True
                     return
+
 
 def drawStars():
     for star in stars:
         lcd_set_color(star.c, star.c, star.c)
         lcd_draw_pixel(star.x, star.y)
 
+
 def play():
     global wave_counter
- 
+
     showDeadMessage = True
 
     spawnShip()
@@ -394,25 +427,24 @@ def play():
         if not holdPlay:
             # Use left button as reset when died
             if not button_a.value():
-                
                 break
 
             drawStars()
-            ship.vx = (joy_x.read_u16() / 2**16 - .5) * speed
-            ship.vy = -(joy_y.read_u16() / 2**16 - .5) * speed
+            ship.vx = (joy_x.read_u16() / 2**16 - 0.5) * speed
+            ship.vy = -(joy_y.read_u16() / 2**16 - 0.5) * speed
             shipExist = False
             for sprite in sprites:
-                # Check if ship 
-                if isinstance(sprite,Ship):
+                # Check if ship
+                if isinstance(sprite, Ship):
                     shipExist = True
                 sprite.move()
-         
-            if(shipExist):
+
+            if shipExist:
                 if not button_b.value():
                     ship.fire()
-                    
+
                 checkCollisions()
-                if(checkGameHasEnded()):
+                if checkGameHasEnded():
                     wave_counter += 1
                     break
             else:
@@ -423,34 +455,33 @@ def play():
                     sleep(0.3)
                     crash_beep(140)
                     show_message("GAME OVER (PRESS LEFT BUTTON TO RESTART)")
-                showDeadMessage = False 
-            
-                
+                showDeadMessage = False
 
-        sleep(1/60)
+        sleep(1 / 60)
         cycle += 1
 
+
 # Wave Managment
-# To have boss endings use this 
+# To have boss endings use this
 def checkGameHasEnded():
     global holdPlay
-    if(len(sprites) - 1 ==  0):
-        # follow stack for wave update 
+    if len(sprites) - 1 == 0:
+        # follow stack for wave update
         # current level is updated after the sound
         # TODO: use a listner for the sound to finish then update the wave
         holdPlay = True
-        winning_sound() 
+        winning_sound()
         show_message("WAVE " + str(wave_counter + 1))
         sleep(5)
         return True
     # Rules for the level
-    #if(len(sprites) - 1 == 1 and not died):
-    #    winning_sound() 
+    # if(len(sprites) - 1 == 1 and not died):
+    #    winning_sound()
     #    show_message("WAVE 3")
     #    sleep(5)
     #    return True
-        #spawnBoss()
-        
+    # spawnBoss()
+
 
 def wave(asteroids, stars):
     clear()
@@ -466,13 +497,16 @@ def clear():
     sprites.clear()
     stars.clear()
 
+
 def bgProcess():
     while True:
         pass
 
+
 def spawnShip():
     global ship
-    ship = Ship("Player 1", color = (0, 128, 0))
+    ship = Ship("Player 1", color=(0, 128, 0))
+
 
 def spawnBoss():
     boss = Boss()  # Use our new round “Boss” class
@@ -489,7 +523,8 @@ def spawnBoss():
 
     boss.health = int(boss.w * boss.h)
     boss.maxHealth = boss.health
-    boss.color = (255, 0, 0) 
+    boss.color = (255, 0, 0)
+
 
 def spawnAsteroid():
     asteroid = Asteroid()
@@ -503,12 +538,14 @@ def spawnAsteroid():
     asteroid.maxHealth = asteroid.health
     asteroid.color = (255, 0, 0)
 
+
 def spawnStar():
     s = Star()
     s.x = randint(0, width - 1)
     s.y = randint(0, height - 1)
     s.c = randint(10, 200)
     stars.append(s)
+
 
 def show_message(msg):
     # Choose a location to draw
@@ -519,26 +556,25 @@ def show_message(msg):
     lcd_draw_text(start_x, start_y, msg, color)
 
 
-
 def main():
     lcd_init()
-    
+
     while True:
         if wave_counter == 1:
-            wave(1,25)
+            wave(1, 25)
         elif wave_counter == 2:
             print("Spawn wave 2")
-            wave(10,10)
+            wave(10, 10)
         elif wave_counter == 3:
             print("spawn wave 3")
-            wave(5,5)
+            wave(5, 5)
             spawnBoss()
 
-        
+
 def hiccupSound():
     maxstep = 10
     f = 1000
-    d = .02
+    d = 0.02
 
     for n in range(maxstep):
         step = n + 1
@@ -546,10 +582,11 @@ def hiccupSound():
         play_tone(randint(100, f), d, int(percent * 55535) + 1000)
     beeperLock.release()
 
+
 def hitSound():
     maxstep = 10
     f = 12000
-    d = .01
+    d = 0.01
 
     for n in range(maxstep):
         step = n + 1
@@ -559,6 +596,7 @@ def hitSound():
         lcd_stop_tone()
 
     beeperLock.release()
+
 
 if __name__ == "__main__":
     main()

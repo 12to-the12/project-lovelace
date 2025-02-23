@@ -97,7 +97,6 @@ def lcd_clear(r=0, g=0, b=0):
 
 @micropython.native
 def lcd_fill(x: int, y: int, w: int, h: int):
-
     # set write range
     lcd_set_range(x, y, w, h)
     # lcd_set_range_fast(x, y, w, h)

@@ -9,26 +9,27 @@ from lcd import *
 import _thread
 from math import atan2, degrees, pi, cos, sin
 
-background = (0,0,0)
+background = (0, 0, 0)
 
-sprites = [] # all sprites
+sprites = []  # all sprites
 stars = []
 beeperLock = _thread.allocate_lock()
+
 
 class Sprite:
     name = ""
     health = 0
     maxHealth = 0
     damage = 10
-    x = 0.
-    y = 0.
-    vx = 0.
-    vy = 0.
+    x = 0.0
+    y = 0.0
+    vx = 0.0
+    vy = 0.0
     w = 1
     h = 1
-    color = (0,0,0)
+    color = (0, 0, 0)
 
-    def __init__(self, name = "", health = 100, color=None):
+    def __init__(self, name="", health=100, color=None):
         self.name = name
         self.health = health
         self.maxHealth = health
@@ -79,13 +80,12 @@ class Ship(Sprite):
         if self.bulletCount >= 10:
             return
         self.bulletCount += 1
-        bullet = Bullet(f"Bullet {self.bulletCount}", color=(255,255,255))
+        bullet = Bullet(f"Bullet {self.bulletCount}", color=(255, 255, 255))
         v = sqrt(self.vx**2 + self.vy**2)
         bullet.x = self.x
         bullet.y = self.y
         bullet.vx = self.vx / v * 5 + self.vx
         bullet.vy = self.vy / v * 5 + self.vy
-
 
     def draw(self):
         # If there's no velocity, use a default angle (e.g., 0 degrees).
@@ -111,16 +111,15 @@ class Ship(Sprite):
         # Calculate the 3 corner points of the triangle
         tip_x = center_x + int(size * cos(angle_rad))
         tip_y = center_y + int(size * sin(angle_rad))
-        left_x = center_x + int(size * cos(angle_rad + 2*pi/3))
-        left_y = center_y + int(size * sin(angle_rad + 2*pi/3))
-        right_x = center_x + int(size * cos(angle_rad - 2*pi/3))
-        right_y = center_y + int(size * sin(angle_rad - 2*pi/3))
+        left_x = center_x + int(size * cos(angle_rad + 2 * pi / 3))
+        left_y = center_y + int(size * sin(angle_rad + 2 * pi / 3))
+        right_x = center_x + int(size * cos(angle_rad - 2 * pi / 3))
+        right_y = center_y + int(size * sin(angle_rad - 2 * pi / 3))
 
         # Draw the triangle
         lcd_draw_line(tip_x, tip_y, left_x, left_y)
         lcd_draw_line(left_x, left_y, right_x, right_y)
         lcd_draw_line(right_x, right_y, tip_x, tip_y)
-
 
 
 class Bullet(Sprite):
@@ -140,6 +139,7 @@ class Bullet(Sprite):
         lcd_set_color(*self.color)
         lcd_fill(int(self.x), int(self.y), self.w, self.h)
 
+
 class Asteroid(Sprite):
     health = 100
     damage = 100
@@ -149,13 +149,12 @@ class Asteroid(Sprite):
 
     def takeDamage(self, dmg):
         super().takeDamage(dmg)
-        
+
         healthPercent = self.health / self.maxHealth
         redDark = 255 - 180
         total = (healthPercent * redDark) + 180
- 
-        self.color = (int(total) , 0, 0)
 
+        self.color = (int(total), 0, 0)
 
     def draw(self):
         lcd_set_color(*self.color)
@@ -165,10 +164,12 @@ class Asteroid(Sprite):
         if midX < width:
             lcd_draw_v_line(midX, int(self.y), int(self.y) + self.h - 1)
 
+
 class Star:
     x = 0
     y = 0
     c = 0
+
 
 def play_tone(frequency, duration, volume=2000):
     beeperLock.acquire()
@@ -183,12 +184,14 @@ def play_tone(frequency, duration, volume=2000):
     lcd_stop_tone()
     beeperLock.release()
 
+
 def crash_beep(frequency):
     if beeperLock.acquire(False):  # Try to acquire the beeperLock without blocking
         try:
             _thread.start_new_thread(play_tone, (frequency, 0.05))  # Start the thread
         finally:
             beeperLock.release()  # Ensure the beeperLock is released after the thread finishes
+
 
 def threaded_beep():
     if beeperLock.acquire(False):  # Try to acquire the beeperLock without blocking
@@ -197,18 +200,17 @@ def threaded_beep():
         finally:
             beeperLock.release()  # Ensure the beeperLock is released after the thread finishes
 
+
 def is_collision(x1_1, y1_1, x2_1, y2_1, x1_2, y1_2, x2_2, y2_2):
-    return (
-        x1_1 < x2_2 and
-        x2_1 > x1_2 and
-        y1_1 < y2_2 and
-        y2_1 > y1_2
-    )
+    return x1_1 < x2_2 and x2_1 > x1_2 and y1_1 < y2_2 and y2_1 > y1_2
+
 
 def checkColl():
-    for i in reversed(range(len(sprites))):  # Iterate in reverse to safely remove elements
+    for i in reversed(
+        range(len(sprites))
+    ):  # Iterate in reverse to safely remove elements
         object_check = sprites[i]
-        for v in range(0,i):  # Check against all previous sprites
+        for v in range(0, i):  # Check against all previous sprites
             object_check_with = sprites[v]
 
             value = object_check.tag | object_check_with.tag
@@ -217,38 +219,68 @@ def checkColl():
             if value == (Asteroid.tag | Bullet.tag):
                 # Calculate bounding boxes
                 asteroid_x1, asteroid_y1 = object_check.x, object_check.y
-                asteroid_x2, asteroid_y2 = object_check.x + object_check.w, object_check.y + object_check.h
+                asteroid_x2, asteroid_y2 = (
+                    object_check.x + object_check.w,
+                    object_check.y + object_check.h,
+                )
 
                 bullet_x1, bullet_y1 = object_check_with.x, object_check_with.y
-                bullet_x2, bullet_y2 = object_check_with.x + object_check_with.w, object_check_with.y + object_check_with.h
+                bullet_x2, bullet_y2 = (
+                    object_check_with.x + object_check_with.w,
+                    object_check_with.y + object_check_with.h,
+                )
 
                 # Check for collision
-                if is_collision(bullet_x1, bullet_y1, bullet_x2, bullet_y2,
-                                asteroid_x1, asteroid_y1, asteroid_x2, asteroid_y2):
-                    object_check.takeDamage(object_check_with.damage) # Damage object 1
-                    object_check_with.takeDamage(object_check.damage) # Damage object 2
-
+                if is_collision(
+                    bullet_x1,
+                    bullet_y1,
+                    bullet_x2,
+                    bullet_y2,
+                    asteroid_x1,
+                    asteroid_y1,
+                    asteroid_x2,
+                    asteroid_y2,
+                ):
+                    object_check.takeDamage(object_check_with.damage)  # Damage object 1
+                    object_check_with.takeDamage(object_check.damage)  # Damage object 2
 
                     threaded_beep()
                     return
             if value == (Ship.tag | Asteroid.tag):
-                 # Calculate bounding boxes
+                # Calculate bounding boxes
                 asteroid_x1, asteroid_y1 = object_check.x, object_check.y
-                asteroid_x2, asteroid_y2 = object_check.x + object_check.w, object_check.y + object_check.h
+                asteroid_x2, asteroid_y2 = (
+                    object_check.x + object_check.w,
+                    object_check.y + object_check.h,
+                )
 
                 ship_x1, ship_y1 = object_check_with.x, object_check_with.y
-                ship_x2, ship_y2 = object_check_with.x + object_check_with.w, object_check_with.y + object_check_with.h
+                ship_x2, ship_y2 = (
+                    object_check_with.x + object_check_with.w,
+                    object_check_with.y + object_check_with.h,
+                )
 
-                if is_collision(asteroid_x1, asteroid_y1, asteroid_x2, asteroid_y2,
-                                ship_x1, ship_y1, ship_x2, ship_y2):
-                    object_check.takeDamage(object_check_with.damage) # Damage object 1
-                    object_check_with.takeDamage(object_check.damage) # Damage object 2
+                if is_collision(
+                    asteroid_x1,
+                    asteroid_y1,
+                    asteroid_x2,
+                    asteroid_y2,
+                    ship_x1,
+                    ship_y1,
+                    ship_x2,
+                    ship_y2,
+                ):
+                    object_check.takeDamage(object_check_with.damage)  # Damage object 1
+                    object_check_with.takeDamage(object_check.damage)  # Damage object 2
                     crash_beep(10400)
                     return
+
+
 def drawStars():
     for star in stars:
         lcd_set_color(star.c, star.c, star.c)
         lcd_draw_pixel(star.x, star.y)
+
 
 def play():
     spawnShip()
@@ -257,8 +289,8 @@ def play():
     speed = 10
     while True:
         drawStars()
-        ship.vx = (joy_x.read_u16() / 2**16 - .5) * speed
-        ship.vy = -(joy_y.read_u16() / 2**16 - .5) * speed
+        ship.vx = (joy_x.read_u16() / 2**16 - 0.5) * speed
+        ship.vy = -(joy_y.read_u16() / 2**16 - 0.5) * speed
         for sprite in sprites:
             sprite.move()
         if not button_a.value():
@@ -266,20 +298,24 @@ def play():
         if not button_b.value():
             ship.fire()
         checkColl()
-        #sleep(1/60)
+        # sleep(1/60)
+
 
 def clear():
     lcd_clear()
     sprites.clear()
     stars.clear()
 
+
 def bgProcess():
     while True:
         pass
 
+
 def spawnShip():
     global ship
-    ship = Ship("Player 1", color = (0, 128, 0))
+    ship = Ship("Player 1", color=(0, 128, 0))
+
 
 def spawnAsteroid():
     asteroid = Asteroid()
@@ -294,12 +330,14 @@ def spawnAsteroid():
     asteroid.maxHealth = asteroid.health
     asteroid.color = (255, 0, 0)
 
+
 def spawnStar():
     s = Star()
     s.x = randint(0, width - 1)
     s.y = randint(0, height - 1)
     s.c = randint(10, 200)
     stars.append(s)
+
 
 def wave1():
     clear()
@@ -309,12 +347,14 @@ def wave1():
         spawnStar()
     play()
 
+
 def main():
     lcd_init()
-    
+
     while True:
         wave1()
-        sleep(.1)
+        sleep(0.1)
+
 
 if __name__ == "__main__":
     main()

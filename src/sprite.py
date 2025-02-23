@@ -38,8 +38,10 @@ class SpatialObject:
             # acc = SpatialVector(dist(factor), dist(factor))
         if not orientation:
             orientation = 0
-        if not rotational_velocity: rotational_velocity=0    
-        if not mass: mass=0
+        if not rotational_velocity:
+            rotational_velocity = 0
+        if not mass:
+            mass = 0
 
         self.pos = pos
         self.vel = vel
@@ -109,8 +111,10 @@ class SpatialObject:
         if (not up) and (not down):
             ball.acc.y = 0
         self.apply()
+
     def serialize(self):
         pass
+
     def draw(self):
         pass
 
