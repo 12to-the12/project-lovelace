@@ -22,17 +22,15 @@ def main():
             x = 0
             xv = -xv
         elif x + imgWidth >= width:
-            x = width - imgWidth - 1
+            x = width - imgWidth
             xv = -xv
-            y += yv
         y += yv
         if y < 0:
             y = 0
             yv = -yv
         elif y + imgHeight >= height:
-            y = height - imgHeight - 1
+            y = height - imgHeight
             yv = -yv
-            y += yv
 
 if __name__ == "__main__":
     main()
