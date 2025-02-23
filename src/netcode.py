@@ -15,6 +15,7 @@ from time import sleep
 from ujson import dumps
 from ujson import loads as deserialize
 import ntptime
+from sprite import ball
 
 
 def serialize(packet):
@@ -32,7 +33,6 @@ from time import time as epoch
 
 
 from timing import Pulse
-from spatial import ball
 from config import config
 
 sleep_ms = lambda x: sleep(x / 1000)

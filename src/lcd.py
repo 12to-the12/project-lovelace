@@ -17,8 +17,7 @@ Pin(5, Pin.OUT or Pin.PULL_DOWN)  # Chip select (pull down for dedicated spi)
 dc = Pin(6, Pin.OUT)  # Data / Command
 rst = Pin(7, Pin.OUT)  # Reset
 
-button_a = Pin(15, Pin.IN)
-button_b = Pin(14, Pin.IN)
+
 width = 480
 height = 320
 r = 0

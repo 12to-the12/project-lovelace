@@ -5,3 +5,12 @@ baud_rate set to -1;Writing 10 columns pixel by pixel; 3608.00ms
 solid_fill;Writing 10 columns pixel by pixel; 40ms
 
 native;26ms
+
+
+
+
+# full screen solid color write
+blocks, nonnative: 500ms
+blocks, native: 367ms
+alfred's: 188ms
+viper on mine: 728ms

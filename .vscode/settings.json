@@ -1,0 +1,16 @@
+{
+    "python.languageServer": "Jedi",
+    "python.analysis.typeCheckingMode": "basic",
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportMissingModuleSource": "none"
+    },
+    "python.terminal.activateEnvironment": false,
+    "micropico.openOnStart": true,
+    "python.analysis.typeshedPaths": [
+        "~/.micropico-stubs/included"
+    ],
+    "python.analysis.extraPaths": [
+        "~/.micropico-stubs/included"
+    ],
+    "micropico.syncFolder": "src"
+}

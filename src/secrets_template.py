@@ -1,2 +1,2 @@
-ssid=""
-password=""
+ssid = ""
+password = ""
