@@ -36,7 +36,7 @@ stop-server:
 	
 push-server: stop-server
 	cp ./src/config.py ./server-src/config.py
-	rsync -avzh ./server-src/ lovelace:~/server/
+	rsync -avzh ./server-src/ lovelace:~/server/ --delete
 
 start-server: push-server
 	ssh lovelace "tmux new-session -d -s 'server' ./server/main.py"

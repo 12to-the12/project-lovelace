@@ -17,10 +17,6 @@ spi = SPI(0, baudrate=-1, sck=Pin(2), mosi=Pin(3), miso=Pin(4))
 Pin(5, Pin.OUT or Pin.PULL_DOWN)  # Chip select (pull down for dedicated spi)
 dc = Pin(6, Pin.OUT)  # Data / Command
 rst = Pin(7, Pin.OUT)  # Reset
-joy_x = ADC(Pin(26, pull=None))
-joy_y = ADC(Pin(27, pull=None))
-button_a = Pin(15, Pin.IN)
-button_b = Pin(14, Pin.IN)
 width = 480
 height = 320
 r = 0
@@ -102,17 +98,8 @@ def lcd_clear(r=0, g=0, b=0):
 def lcd_fill(x: int, y: int, w: int, h: int):
     # set write range
     lcd_set_range(x, y, w, h)
-    # lcd_set_range_fast(x, y, w, h)
     # initiate memory write
     lcd_draw()
-    # write rows to display
-    # row = bytearray()
-    # for _ in range(w):
-    #     row.append(r)
-    #     row.append(g)
-    #     row.append(b)
-    #     row.extend([r, g, b])
-    # row = bytearray(mylist)
     row = bytearray([r, g, b] * w)
     write_bytes(row, h)
 
@@ -129,26 +116,6 @@ def lcd_read_data(num_bytes=1):
     response = spi.read(num_bytes)
     return response
 
-
-# @micropython.viper
-# def lcd_set_range_fast(x: int, y: int, w: int, h: int):
-#     w -= 1
-#     h -= 1
-#     dc.value(0)  # Instruction mode
-#     spi.write(bytearray([0x2A]))
-#     dc.value(1)  # Parameter mode
-#     spi.write(bytearray([x >> 8 & 0xFF]))
-#     spi.write(bytearray([x & 0xFF]))
-#     spi.write(bytearray([x + w >> 8 & 0xFF]))
-#     spi.write(bytearray([x + w & 0xFF]))
-
-#     dc.value(0)  # Instruction mode
-#     spi.write(bytearray([0x2B]))
-#     dc.value(1)  # Parameter mode
-#     spi.write(bytearray([y >> 8 & 0xFF]))
-#     spi.write(bytearray([y & 0xFF]))
-#     spi.write(bytearray([y + h >> 8 & 0xFF]))
-#     spi.write(bytearray([y + h & 0xFF]))
 
 
 @micropython.native

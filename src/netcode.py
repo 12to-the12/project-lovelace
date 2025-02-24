@@ -1,46 +1,53 @@
-import socket
-
-# import ssl
+import machine
+import usocket as socket
 from time import sleep
-
-# from msgpack import unpackb as deserialize
-# from msgpack import packb as serialize
-
-# import marshal
-# from marshal import dumps as serialize
-# from marshal import loads as deserialize
-
-# import umarshal
-
 from ujson import dumps
 from ujson import loads as deserialize
 import ntptime
-from sprite import ball
+from sprite import pos_sprite
+import network
+from time import time_ns as epoch_ns
+from world import world
+from time import time as epoch
+from config import config
+from machine import soft_reset as quit
+from timing import Pulse
+
+from time import ticks_ms, ticks_us
+
+# from queue import Queue
+
+
+# doesn't actually need to be threadsafe
+# I'll implement the same api though
+class Queue:
+    def __init__(self):
+        self.q = []
+
+    def get(self):
+        return self.q.pop()
+
+    def qsize(self):
+        return len(self.q)
+
+    def put(self, data):
+        self.q.insert(0, data)
+
+    def task_done(self):
+        pass
+
+
+def epoch_float():
+    return float(epoch_ns()) / 1.0e9
 
 
 def serialize(packet):
-    # if isinstance(packet, str):
-    #     print("encoding string as bytes object")
-    #     data = packet.encode()
-    #     # bytes(data, encoding="utf-8")
-    # print(packet)
     data = dumps(packet)
     data = data.encode()
     return data
 
 
-from time import time as epoch
-
-
-from timing import Pulse
-from config import config
-
 sleep_ms = lambda x: sleep(x / 1000)
-# import threading
-import _thread
-
-
-from machine import soft_reset as quit
 
 
 class Connection:
@@ -54,206 +61,158 @@ class Connection:
         self.packets_received = 0
         self.bad_packets_received = 0
         self.bad_packet_threshold_ms = 1.8
+
+        self.broadcast_queue = Queue()
+        self.pings = Pulse()
+
+        self.connect_to_wifi()
         self.syncronize_time()
-        self.init_tcp()
         self.init_udp()
+        self.initiate_duplex_udp_connection()
 
-        if config.pingmode:
-            self.ping_mode()
+    def connect_to_wifi(self):
+        from secrets import ssid, password
 
-        if config.single_threaded_io:
-            self.single_threaded_io()
-        else:
-            print("launching streams")
-            self.launch_streams()
-
-    def ping_mode(self):
-        while True:
-            self.tcp_send(epoch())
-            packet = self.tcp_scan()
-            ping = (epoch() - packet) * 1000
-            if ping > self.bad_packet_threshold_ms:
-                self.bad_packets_received += 1
-                badrate = self.bad_packets_received / (epoch() - self.start)
-                print(
-                    f"packets above {self.bad_packet_threshold_ms}ms per second: {badrate:.2f}"
-                )
-
-    def init_tcp(self):
-        # context = ssl.SSLContext(ssl.PROTOCOL_TLS)
-        # context.load_verify_locations("rootCA.pem")
-
-        # self.tcp_sock = socket.socket()
-        self.tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # self.tcp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
-        # self.tcp_sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, True)
-        # self.tcp_sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK, False)
-
-        self.server_port = 5002
-        # self.tcp_sock = context.wrap_socket(
-        #     self.tcp_sock, server_hostname=self.server_address
-        # )
-
-        self.connection_id = self.tcp_connect()
-        print(f"assigned connection ID: {self.connection_id}")
+        wlan = network.WLAN(network.STA_IF)
+        wlan.active(True)
+        print("connecting to WiFi...")
+        wlan.connect(ssid, password)
+        while not wlan.isconnected():
+            print("waiting for connection...")
+            sleep(1)
+        print(wlan.isconnected())
+        print(wlan.ifconfig())
 
     def syncronize_time(self):
         from time import localtime
 
-        print("syncronizing time...")
+        print("syncronizing time with remote server...")
         # print(ntptime.time())
         print(localtime())
-        ntptime.settime()
+
+        for _ in range(5):
+            try:
+                ntptime.settime()
+                sleep(1)
+            except:
+                break
+
+        self.us_offset = ticks_us
+        # this has technique has issues within the second
+        self.local_epoch = epoch()
+        # except:
+        # break
         print(localtime())
 
-    def tcp_connect(self):
-        # try:
-        print("attempting connection...")
-        # if config.desktop_mode:
-        #     self.tcp_sock.connect((self.server_address, self.server_port))
-        # else:
-        print(self.server_address)
-        print(self.server_port)
+    def timestamp(self):
+        time_since = (ticks_us() - self.us_offset()) / 1e6
 
-        addr = socket.getaddrinfo(
-            self.server_address, self.server_port, 0, socket.SOCK_STREAM
-        )[0][-1]
-        # addr = socket.getaddrinfo("www.micropython.org", 80, 0, socket.SOCK_STREAM)[0][
-        #     -1
-        # ]
-        # print(addr)
-        print("address fetched")
-        self.tcp_sock.connect(addr)
+        return self.local_epoch + time_since
 
-        print("connection successful")
-        # return deserialize(self.tcp_sock.recv(2048), strict_map_key=False)
-        data = self.tcp_sock.recv(2048)
-        try:
-            packet = deserialize(data)
-            return packet
-        except:
-            print(data)
-            quit()
+    def initiate_duplex_udp_connection(self):
+        # perform connection routine
+        self.machine_id = hash(machine.unique_id())
+        JOIN = {
+            "type": "join",
+            "timestamp": self.timestamp(),
+            "client_id": self.machine_id,
+        }
 
-        # except Exception as e:
-        #     print("connection failed")
-        #     raise(Exception(e))
-        #     quit()
-        #     pass
+        self.udp_send(JOIN)
+        print("listening...")
 
-    def tcp_send(self, data):
-        try:
-            self.tcp_sock.sendall(serialize(data))
-        except Exception as e:
-            print(e)
-            return None
-
-    def tcp_scan(self):
-        data = self.tcp_sock.recv(2048 * 8)
-        try:
-            # packet = deserialize(data, strict_map_key=False)
-            packet = deserialize(data)
-            self.packets_received += 1
-
-            return packet
-        except Exception as e:
-            raise (Exception(e))
-
-    def single_threaded_io(self):
-        pass
-
-    def launch_streams(self):
-        global worldstate
-        worldstate = {1: 2}
-        # self.send_position_thread = threading.Thread(target=self.sending)
-        self.send_position_thread = _thread.start_new_thread(self.sending, ())
-
-        # this prevents threads from persisting past main
-        # self.send_position_thread.daemon = True
-        # self.send_position_thread.start()
-
-        # self.read_worldstate_thread = threading.Thread(target=self.receiving)
-        self.read_worldstate_thread = _thread.start_new_thread(self.receiving, ())
-        # self.read_worldstate_thread.daemon = True
-        # self.read_worldstate_thread.start()
-
-    def receiving(self):
-        global worldstate
         while True:
             try:
-                packet = self.tcp_scan()
-                if packet == None:
-                    continue
-                if not packet:
-                    print("<connection terminated>")
+                packet = self.udp_scan()
+                if packet:
+                    print(packet)
                     break
+            except OSError as e:
+                if e.args[0] != 11:  # ignore if just no data (EAGAIN)
+                    raise Exception(e)
 
-                if packet["type"] == "worldstate":
-                    self.worldstate = packet["worldstate"]
+            sleep(1)
+        print("packet received")
+        print(packet)
+        if packet["type"] == "OK":
+            print("connection established, joining world...")
 
-                if packet["type"] == "pong":
-                    original = packet["client_timestamp"]
-                    remote = packet["timestamp"]
-                    now = epoch()
-                    # print("ping")
-                    # print(f"\tto server: {(remote - original) * 1_000:0.2f}ms")
-                    # print(f"\treturn: {(now - remote) * 1000:.2f}ms")
-                    print(f"ping: {(now - original) * 1000:.2f}ms")
+            self.world_id = packet["world_id"]
+            world.legitimize(self.world_id)
 
-            except:
-                continue
-        # sleep_ms(100)
-
-    def sending(self):
-        timing_pulse = Pulse(period=(1000 / 1000))
-        while True:
-            if timing_pulse.read():
-                # send epoch packet
-                # print("sending ping")
-                packet = {
-                    "type": "ping",
-                    "timestamp": epoch(),
-                }
-                self.tcp_send(packet)
-
-            packet = {
-                "type": "player_state",
-                "id": self.connection_id,
-                "player_state": {
-                    "position": (ball.pos.x, ball.pos.y, ball.pos.z),
-                    "velocity": (ball.vel.x, ball.vel.y, ball.vel.z),
-                    "acceleration": (ball.acc.x, ball.acc.y, ball.acc.z),
-                },
-                "timestamp": epoch(),
+    def handle_packet(self, packet):
+        if packet["type"] == "worldstate":
+            world.sprites["friend"] = pos_sprite(packet["friend"])
+        if packet["type"] == "ping":
+            response = {
+                "type": "pong",
+                "timestamp": epoch_float(),
+                "original_timestamp": packet["timestamp"],
             }
+            self.broadcast_queue.put(response)
+        if packet["type"] == "pong":
+            original_timestamp = packet["original_timestamp"]
+            now = epoch_float()
+            elapsed_ms = now - original_timestamp
+            print("pong received")
+            # print(f"original: {packet["original_timestamp"]:.3f}")
+            # print(f"remote: {packet["timestamp"]:.2f}")
+            # print(f"now: {now:.2f}")
+            print(f"{elapsed_ms}ms roundtrip\n")
+
+    def loop_over_io(self):
+        if self.pings.read() and config.pingmode:
+            print("sending ping...")
+            self.broadcast_queue.put(
+                {
+                    "type": "ping",
+                    "timestamp": epoch_float(),
+                }
+            )
+
+        try:
+            packet = self.udp_scan()
+            if packet:
+                self.handle_packet(packet)
+        except OSError as e:
+            if e.args[0] != 11:  # ignore if just no data (EAGAIN)
+                raise Exception(e)
+
+        while self.broadcast_queue.qsize() > 0:
+            packet = self.broadcast_queue.get()
             self.udp_send(packet)
-            sleep_ms(self.snapshot_interval_ms)
+            self.broadcast_queue.task_done()
 
     def init_udp(self):
-        # self.MY_IP = "192.168.4.95"
-        # UDP_PORT = 5003
-        # self.SERVER_TO_CLIENT_PORT = 5003
-        self.CLIENT_TO_SERVER_PORT = 5003
+        self.listening_port = 5003
+        self.servers_listening_port = 5002
 
-        # self.downstream = socket.socket(
-        #     socket.AF_INET, socket.SOCK_DGRAM
-        # )  # Internet  # UDP
-        # self.downstream.bind((MY_IP, self.SERVER_TO_CLIENT_PORT))
+        self.udp_receiver = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-        self.udp_sender_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        # self.upstream.bind((UDP_IP, self.CLIENT_TO_SERVER_PORT))
+        self.udp_receiver.setblocking(False)
+
+        print(f"binding receiver to {self.listening_port}")
+        addr = socket.getaddrinfo(
+            "0.0.0.0", self.listening_port, 0, socket.SOCK_STREAM
+        )[0][-1]
+        self.udp_receiver.bind(addr)
+
+        self.udp_sender = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     def udp_scan(self):
-        data, addr = self.downstream.recvfrom(1024)
-        # packet = deserialize(data, strict_map_key=False)
+        data, (address, port) = self.udp_receiver.recvfrom(2048)
         packet = deserialize(data)
-        return data
+        # if addr != self.server_address:
+        #     raise (Exception("received packet from non server address"))
+        return packet
 
     def udp_send(self, packet):
         data = serialize(packet)
-        self.udp_sender_sock.sendto(
-            data, (self.server_address, self.CLIENT_TO_SERVER_PORT)
-        )
+        addr = socket.getaddrinfo(
+            self.server_address, self.servers_listening_port, 0, socket.SOCK_STREAM
+        )[0][-1]
+
+        self.udp_sender.sendto(data, addr)
 
 
 if __name__ == "__main__":
