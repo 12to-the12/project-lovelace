@@ -5,9 +5,16 @@ from machine import ADC, Pin, PWM, SPI
 joy_x = ADC(Pin(26, pull=None))
 joy_y = ADC(Pin(27, pull=None))
 
+left = Pin(15, Pin.IN)
+right = Pin(14, Pin.IN)
 
-button_a = Pin(15, Pin.IN)
-button_b = Pin(14, Pin.IN)
+
+def button_left():
+    return not left.value()
+
+
+def button_right():
+    return not right.value()
 
 
 class Joystick:
@@ -80,7 +87,7 @@ def readdesktopinput():
 
 
 def readinputboard():
-    return joystick.read(), not button_a.value(), not button_b.value()
+    return joystick.read(), button_left(), button_left()
 
 
 if config.desktop_mode:

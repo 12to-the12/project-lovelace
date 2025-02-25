@@ -1,4 +1,8 @@
-from game import game_init
+import game
+import dragonsample
+import profile
 
 if __name__ == "__main__":
-    game_init()
+    # dragonsample.main()
+    game.game_init()
+    # profile.profile()

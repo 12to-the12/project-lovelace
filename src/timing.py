@@ -2,7 +2,7 @@ from time import time as epoch
 
 
 class Pulse:
-    def __init__(self, period=1) -> None:
+    def __init__(self, period: float = 1) -> None:
         self.period = period
         self.stamp = epoch()
 

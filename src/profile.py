@@ -35,6 +35,9 @@ def joystick_demo():
 def profile():
     print("starting...")
     lcd_init()
+
+    # lcd_set_frame_rate()
+
     while True:
         print("looping")
         r = randint(0, 255)
@@ -42,7 +45,10 @@ def profile():
         start_time = time.ticks_ms()
 
         lcd_set_color(randint(0, 255), randint(0, 255), randint(0, 255))
+        # lcd_set_color(0, 255, 0)
+
         lcd_fill(0, 0, 480, 320)
+
         # lcd_set_color(randint(0, 255), randint(0, 255), randint(0, 255))
         # for _ in range(10):
         #     lcd_fill(randint(0,400), randint(0,240), 80, 80)

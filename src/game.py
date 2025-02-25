@@ -3,7 +3,7 @@ from time import time as epoch
 from time import time_ns as epoch_ns
 import sys
 
-from sprite import Sprite
+from sprite import Entity
 import network
 from netcode import Connection
 from config import config
@@ -12,14 +12,15 @@ from time import sleep
 from player_input import readinput
 from sprite import player
 from timing import Pulse
-from world import world
+from sprite import world
+from buzzer import buzzer
+from screenwrite import printsc
 
 
 def readout(things):
     global readouts
     if readouts.read():
         print(things)
-
 
 
 def clock_wait():
@@ -47,19 +48,40 @@ def clock_wait():
 
 def do_physics(player, direction):
     player.push(direction)
+    player.apply()
+    # world.viewport_entity.vel.x = 10
+    # world.viewport_entity.pos.x %= 480
+    world.viewport_entity.apply()
 
 
 def draw_sprites():
     global erase
-    lcd_set_color(0, 0, 0)
+
     for _ in erase:
-        lcd_fill(*erase.pop(), 10, 10)
+        x, y = erase.pop()
+        # x -= world.viewport_entity.pos.x
+        # y -= world.viewport_entity.pos.y
+        # if (
+        #     (x < 0)
+        #     or (y > world.display_width)
+        #     or (y < 0)
+        #     or (y > world.display_height)
+        # ):
+        #     continue
+        # lcd_set_color(0, 0, 0)
+        # lcd_fill(int(x), int(y), 32, 32)
+
+        # lcd_set_color(255, 255, 0)
+        # lcd_draw_pixel(int(x), int(y))
+
     for sprite in world.sprites.values():
-        lcd_set_color(randint(0, 255), randint(100, 255), randint(0, 100))
+        # print(sprite)
+        sprite.draw()
+        # lcd_set_color(randint(0, 255), randint(100, 255), randint(0, 100))
 
-        lcd_fill(*sprite.screen_coords(), 10, 10)
-
-    erase.insert(0, player.screen_coords())
+        # lcd_draw_text(*sprite.screen_coords(), ":-+-:")
+        # print(sprite.screen_coords())
+        erase.insert(0, sprite.screen_coords())
 
 
 # @timefunct
@@ -78,6 +100,11 @@ def game_loop():
 
     connection.loop_over_io()
 
+    readout(
+        f"\nplayer position:{player.screen_coords()}"
+    )
+    # print(f"{player.speed=}  {player.speed**2=}")
+    # buzzer.set(player.speed**1.1, 3 * player.speed)
     clock_wait()
 
 
@@ -87,20 +114,18 @@ def game_init():
     readouts = Pulse()
     erase = []
 
+    buzzer.stop()
     lcd_init()
     lcd_clear()
 
-    print("starting network operations")
     connection = Connection()
     # world = connection.world
 
+    print("starting gameloop...")
+    lcd_clear()
     while True:
 
         game_loop()
-
-
-
-
 
 
 # def draw_circles():

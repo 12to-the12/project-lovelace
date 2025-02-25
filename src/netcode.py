@@ -7,11 +7,12 @@ import ntptime
 from sprite import pos_sprite
 import network
 from time import time_ns as epoch_ns
-from world import world
+from sprite import world
 from time import time as epoch
 from config import config
 from machine import soft_reset as quit
 from timing import Pulse
+from screenwrite import printsc
 
 from time import ticks_ms, ticks_us
 
@@ -65,6 +66,7 @@ class Connection:
         self.broadcast_queue = Queue()
         self.pings = Pulse()
 
+        printsc("starting network operations")
         self.connect_to_wifi()
         self.syncronize_time()
         self.init_udp()
@@ -73,36 +75,45 @@ class Connection:
     def connect_to_wifi(self):
         from secrets import ssid, password
 
+        print("Wifi")
         wlan = network.WLAN(network.STA_IF)
+        print("wlan defined")
+        print(wlan)
         wlan.active(True)
-        print("connecting to WiFi...")
+        print("wlan activated")
         wlan.connect(ssid, password)
+        printsc("Connecting to WiFi", end="")
         while not wlan.isconnected():
-            print("waiting for connection...")
+            printsc(".", end="")
+            # print(wlan)
+            # print(wlan.isconnected())
             sleep(1)
-        print(wlan.isconnected())
-        print(wlan.ifconfig())
+        # print(wlan.isconnected())
+        # print(wlan.ifconfig())
+        printsc()
 
     def syncronize_time(self):
         from time import localtime
 
-        print("syncronizing time with remote server...")
+        printsc("syncronizing time with remote server")
         # print(ntptime.time())
-        print(localtime())
+        # print(localtime())
 
-        for _ in range(5):
+        for _ in range(1):
             try:
                 ntptime.settime()
+                printsc(".", end="")
                 sleep(1)
             except:
                 break
+        printsc()
 
         self.us_offset = ticks_us
         # this has technique has issues within the second
         self.local_epoch = epoch()
         # except:
         # break
-        print(localtime())
+        # print(localtime())
 
     def timestamp(self):
         time_since = (ticks_us() - self.us_offset()) / 1e6
@@ -118,31 +129,44 @@ class Connection:
             "client_id": self.machine_id,
         }
 
-        self.udp_send(JOIN)
-        print("listening...")
+        waiting = True
+        while waiting:
+            self.udp_send(JOIN)
+            printsc("\njoin request sent, waiting for reply", end="")
+            for _ in range(10):
+                try:
+                    packet = self.udp_scan()
+                    if packet:
+                        print(packet)
+                        waiting = False
+                        break
 
-        while True:
-            try:
-                packet = self.udp_scan()
-                if packet:
-                    print(packet)
-                    break
-            except OSError as e:
-                if e.args[0] != 11:  # ignore if just no data (EAGAIN)
-                    raise Exception(e)
-
+                except OSError as e:
+                    if e.args[0] != 11:  # ignore if just no data (EAGAIN)
+                        raise Exception(e)
+                sleep_ms(100)
+                printsc(".", end="")
             sleep(1)
-        print("packet received")
-        print(packet)
+
+        printsc()
+        # print(packet)
         if packet["type"] == "OK":
-            print("connection established, joining world...")
+            printsc("connection established, joining world...")
 
             self.world_id = packet["world_id"]
             world.legitimize(self.world_id)
 
     def handle_packet(self, packet):
         if packet["type"] == "worldstate":
-            world.sprites["friend"] = pos_sprite(packet["friend"])
+            print(packet)
+            for sprite in packet["worldstate"]["sprites"]:
+                if sprite not in world.sprites:
+                    position = packet["worldstate"]["sprites"][sprite]["pos"]
+                    world.sprites[sprite] = pos_sprite(position)
+                else:
+                    x, y, _ = packet["worldstate"]["sprites"][sprite]["pos"]
+                    world.sprites[sprite].pos.x = x
+                    world.sprites[sprite].pos.y = y
         if packet["type"] == "ping":
             response = {
                 "type": "pong",

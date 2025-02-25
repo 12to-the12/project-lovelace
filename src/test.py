@@ -1,19 +1,10 @@
-import threading
-from time import sleep
+import gzip
 
 
-def myfunction(subject):
-    for _ in range(10):
-        print(f"{subject}")
-        sleep(0.1)
-
-
+def another():
+    return 5
+def default_tester(x=another()):
+    print(x)
 if __name__ == "__main__":
-    mythread = threading.Thread(target=myfunction, args=("A",))
-    mythread.start()
-
-    mythreadb = threading.Thread(target=myfunction, args=("B",))
-    mythreadb.start()
-
-    mythreadc = threading.Thread(target=myfunction, args=("C",))
-    mythreadc.start()
+    default_tester(7)
+    default_tester()
