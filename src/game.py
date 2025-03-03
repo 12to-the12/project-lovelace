@@ -11,7 +11,7 @@ from netcode import Connection
 from config import config
 from lcd import *
 from time import sleep
-from player_input import readinput, button_left, button_right
+from player_input import button_left, button_right
 # from sprite import player
 from timing import Pulse
 from sprite import world
