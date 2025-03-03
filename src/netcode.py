@@ -150,7 +150,7 @@ class Connection:
             sleep(1)
 
         printsc()
-        # print(packet)
+        print(packet)
         if packet["type"] == "OK":
             printsc("connection established, joining world...")
 
