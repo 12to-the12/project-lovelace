@@ -57,14 +57,14 @@ def draw_sprites():
     lcd_set_color(0,0,0)
     for _ in erase:
         x, y, w, h = erase.pop()
-        lcd_fill(int(x), int(y), w, h)
+        lcd_fill(int(x - w/2), int(y - w/2), w, h)
     for name, values in world.sprites.items():
         print(f"{name}:{values}")
         x, y, _ = values["pos"]
         # print(sprite)
         # sprite.draw()
         w, h = values["dim"]
-        lcd_blit_file(values["fname"], int(x), int(y), w, h, values.get("frame"))
+        lcd_blit_file(values["fname"], int(x - w/2), int(y - w/2), w, h, values.get("frame"))
         erase.insert(0, (x, y, w, h))
 
 
