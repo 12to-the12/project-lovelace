@@ -32,7 +32,7 @@ def lcd_rgb_led(r, g, b):
 @micropython.viper
 def lcd_set_frame_rate():
     # FRS is frame frequency?
-    lcd_call(0xB1,0xF3,0x1F)
+    lcd_call(0xB1, 0xF3, 0x1F)
 
 
 @micropython.viper
@@ -346,7 +346,7 @@ def lcd_draw_text(x, y, text, color=(255, 255, 255)):
 def lcd_blit_file(filename, x, y, w, h, frame=0):
     lcd_set_range(x, y, w, h)
     lcd_draw()
-    bufsize = 2**13 # 8 kiB
+    bufsize = 2**13  # 8 kiB
     dataremaining = w * h * 3
     with open(filename, "rb") as f:
         if frame:

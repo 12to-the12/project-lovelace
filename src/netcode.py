@@ -1,23 +1,16 @@
-import secrets
 import socket
 from time import sleep
+import time
 from json import dumps
 from json import loads as deserialize
 
-# from sprite import pos_sprite
-import network
+
+import secrets
 from world import World
-import time
+from timing import Pulse
+from display import printsc
 from config import config
 import secrets
-
-# from machine import soft_reset as quit
-from timing import Pulse
-from screenwrite import printsc
-
-from player_input import button_left, button_right, joystick
-
-# from queue import Queue
 
 
 # doesn't actually need to be threadsafe
@@ -81,10 +74,12 @@ class Time_Tracker:
 
 class Network_Connection:
     def __init__(self):
-        self.connect_to_wifi()
+        if not config.desktop_mode:
+            self.connect_to_wifi()
         self.init_udp()
 
     def connect_to_wifi(self):
+        import network
 
         print("Wifi")
         wlan = network.WLAN(network.STA_IF)
@@ -134,6 +129,9 @@ class Network_Connection:
 
 class Server_Connection:
     def __init__(self):
+        from client_input import client_input
+
+        self.client_input = client_input
 
         self.snapshot_interval_ms = config.snapshot_interval_ms  # ms
 
@@ -189,7 +187,7 @@ class Server_Connection:
                             waiting = False
                             break
                         else:
-                            print(f"{packet["type"]}")
+                            print(f"{packet['type']}")
                             print("ignoring irrelevant packet...")
 
                 except OSError as e:
@@ -206,7 +204,6 @@ class Server_Connection:
             print("received worldstate:")
             print(packet)
             for name, data in packet["worldstate"]["sprites"].items():
-
                 # if name not in world.sprites.keys(): self.world.sprites[name]=pos_sprite()
                 self.world.sprites[name] = data  # dict
         if packet["type"] == "ping":
@@ -233,10 +230,10 @@ class Server_Connection:
             "world_id": getattr(self, "world_id", 0),
             "timestamp": self.time_tracker.timestamp(),
             "playerstate": {
-                "x": joystick.x,
-                "y": joystick.y,
-                "left": button_left(),
-                "right": button_right(),
+                "x": self.client_input.x,
+                "y": self.client_input.y,
+                "left": self.client_input.button_left,
+                "right": self.client_input.button_right,
                 "screen_presses": [],
             },
         }
@@ -266,9 +263,9 @@ class Server_Connection:
             self.broadcast_queue.task_done()
 
 
-# def test_server_connection():
-#     server_connection = Server_Connection()
-#     print(server_connection)
+def test_network_connection():
+    network_connection = Network_Connection()
+    print(network_connection)
 
 
 if __name__ == "__main__":

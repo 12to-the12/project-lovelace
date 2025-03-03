@@ -1,48 +1,41 @@
 from config import config
-from machine import ADC, Pin, PWM, SPI
 
 
-joy_x = ADC(Pin(26, pull=None))
-joy_y = ADC(Pin(27, pull=None))
-
-left = Pin(15, Pin.IN)
-right = Pin(14, Pin.IN)
-
-
-def button_left():
-    return not left.value()
-
-
-def button_right():
-    return not right.value()
-
-
-class Joystick:
+class BoardInput:
     def __init__(self):
-        pass
+        from machine import ADC, Pin, PWM, SPI
+
+        self.x_pin = ADC(Pin(26, pull=None))
+        self.y_pin = ADC(Pin(27, pull=None))
+        self.left_pin = Pin(15, Pin.IN)
+        self.right_pin = Pin(14, Pin.IN)
 
     @property
     def x(self):
-        x = (joy_x.read_u16() / 2**16 - 0.5) * 2
+        x = (self.x_pin.read_u16() / 2**16 - 0.5) * 2
         return x**3
 
     @property
     def y(self):
-        y = (joy_y.read_u16() / 2**16 - 0.5) * 2
+        y = (self.y_pin.read_u16() / 2**16 - 0.5) * 2
         return -(y**3)
+
+    @property
+    def button_left(self):
+        return not self.left_pin.value()
+
+    @property
+    def button_right(self):
+        return not self.right_pin.value()
 
     def read(self):
         return (self.x, self.y)
-
-
-joystick = Joystick()
 
 
 def readdesktopinput():
     import pygame
 
     for event in pygame.event.get():
-
         if event.type == pygame.QUIT:
             pygame.display.quit()
             pygame.quit()
@@ -85,6 +78,8 @@ def readdesktopinput():
             y = 0
         return (x, y)
 
+
+client_input = BoardInput()
 
 # def serialized_input():
 #     return joystick.read(), button_left(), button_left()

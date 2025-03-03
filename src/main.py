@@ -1,5 +1,4 @@
 import game
-import dragonsample
 import profile
 from buzzer import buzzer
 from time import sleep

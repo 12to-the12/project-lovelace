@@ -39,9 +39,9 @@ from worldstate import worldstate
 sleep_ms = lambda x: sleep(x / 1000)
 
 
-
 class World:
     next_player_id = 0
+
     def __init__(self, world_id):
         self.world_id = world_id
         self.clients = {}
@@ -69,7 +69,6 @@ class World:
         if not client_address in self.clients.keys():
             self.add_client(client_address)
         if playerstate:
-
             # print(f"{playerstate}")
             # assert "pos" in playerstate.keys()
             # position_list = playerstate["pos"]
@@ -89,15 +88,19 @@ class World:
                 "pos": [client_sprite.pos.x, client_sprite.pos.y, client_sprite.pos.z],
                 "fname": client_sprite.fname,
                 "dim": (client_sprite.w, client_sprite.h),
-                "frame": int(client_sprite.frame)
+                "frame": int(client_sprite.frame),
             }
-            client_sprite.frame += .25
+            client_sprite.frame += 0.25
             if client_sprite.frame >= client_sprite.frame_count:
-              client_sprite.frame = 0
+                client_sprite.frame = 0
 
         # sprites = {}
         # sprites["player"] = {"pos": (self.friend_x, self.friend_y, 0)}
-        sprites["hole"] = {"fname": "blackhole.rgb", "dim": (64, 64), "pos": (240, 160, 0)}
+        sprites["hole"] = {
+            "fname": "blackhole.rgb",
+            "dim": (64, 64),
+            "pos": (240, 160, 0),
+        }
         # for client in self.clients:
         #     sprites[client.client_id] = {"pos": client.pos}
 

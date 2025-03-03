@@ -1,46 +1,27 @@
 from display import display
-import player_input
 import sprite
-from time import sleep, sleep_ms, sleep_us
 from time import time as epoch
-from time import time_ns as epoch_ns
 import sys
 
 from sprite import Entity
 
-# import network
 from netcode import Server_Connection
 from config import config
-from lcd import *
-from time import sleep
-from player_input import button_left, button_right
+from player_input import BoardInput
 
-# from sprite import player
-from timing import Pulse
-from buzzer import buzzer
-from screenwrite import printsc
+from timing import Pulse, clock_wait
+from display import printsc
 import screenwrite
+from client_input import client_input
+
+
+from time import time_ns, sleep_us
 
 
 def readout(things):
     global readouts
     if readouts.read():
         print(things)
-
-
-def clock_wait():
-    global clock_stamp_ns
-    now = epoch_ns()
-    elapsed_ns = now - clock_stamp_ns
-
-    elapsed = elapsed_ns / 1e9
-    target = 1 / config.fps  # seconds per frame
-    diff = target - elapsed  # time needed to sleep in seconds
-    if elapsed < target:
-        # print("sleeping...")
-        sleep_us(int(diff * 1e6))
-
-    clock_stamp_ns = epoch_ns()
 
 
 # def do_physics(player, direction):
@@ -75,22 +56,24 @@ def game_loop():
 
 def intro():
     if config.production:
+        from lcd import lcd_blit_file
+
         while config.intro:
             lcd_blit_file("star.rgb", 0, 0, width, height)
             printsc("In the darkness of the cosmos...")
-            if button_left() and button_right():
+            if client_input.button_left() and client_input.button_right():
                 break
             printsc("There is the light... of stars.")
-            if button_left() and button_right():
+            if client_input.button_left() and client_input.button_right():
                 break
             printsc("Brilliant, blinding light. Truly, a beauty to behold from afar.")
-            if button_left() and button_right():
+            if client_input.button_left() and client_input.button_right():
                 break
             printsc("But even more so, up close.")
-            if button_left() and button_right():
+            if client_input.button_left() and client_input.button_right():
                 break
             printsc("\nPress a button to continue.")
-            while not (button_left() or button_right()):
+            while not (client_input.button_left() or client_input.button_right()):
                 pass
             lcd_blit_file("dragons.rgb", 0, 0, width, height)
             screenwrite.col_start = randint(10, 100)
@@ -99,41 +82,41 @@ def intro():
             printsc(
                 "And for the dragons that lurk in the deep heavy darkness of space, the desire for these beautiful shining artifacts is so very powerful."
             )
-            if button_left() and button_right():
+            if client_input.button_left() and client_input.button_right():
                 break
             printsc(
                 "Powerful enough to drive the greedy dragons in search of their shards, stardust, and gems into the vast and dangerous unknown."
             )
-            if button_left() and button_right():
+            if client_input.button_left() and client_input.button_right():
                 break
             printsc(
                 "The corners of the galaxy they have yet to explore, are where the stars slumber."
             )
-            if button_left() and button_right():
+            if client_input.button_left() and client_input.button_right():
                 break
             printsc("And so that is where they must go--")
-            if button_left() and button_right():
+            if client_input.button_left() and client_input.button_right():
                 break
             printsc(
                 "But they cannot explore alone, for the quiet is enough to drive anybody mad."
             )
-            if button_left() and button_right():
+            if client_input.button_left() and client_input.button_right():
                 break
             printsc(
                 "Each dragon, a remnant of the planets that have been lost to time."
             )
-            if button_left() and button_right():
+            if client_input.button_left() and client_input.button_right():
                 break
             printsc(
                 "Fueled by greed, and the power that the stars could bring to their planets that they have lost."
             )
-            if button_left() and button_right():
+            if client_input.button_left() and client_input.button_right():
                 break
             printsc("Together, you take flight!")
-            if button_left() and button_right():
+            if client_input.button_left() and client_input.button_right():
                 break
             printsc("\nPress a button to continue.")
-            while not (button_left() or button_right()):
+            while not (client_input.button_left() or client_input.button_right()):
                 pass
             break
         lcd_blit_file("dragons.rgb", 0, 0, width, height)
@@ -141,29 +124,27 @@ def intro():
         screenwrite.col = screenwrite.col_start
         screenwrite.row = randint(10, 120)
     else:
-        lcd_clear()
         print("skipping intro...")
 
 
 def game_init():
-    global erase, clock_stamp_ns, readout_timer_ns, connection, readouts
-    clock_stamp_ns = epoch_ns()
+    global connection
     readouts = Pulse()
     erase = []
 
-    buzzer.stop()
-    lcd_init()
+    from buzzer import buzzer
+
+    if not config.desktop_mode:
+        buzzer.stop()
 
     connection = Server_Connection()
     # world = connection.world
 
     printsc("starting gameloop...")
-    lcd_clear()
 
 
 def start_loop():
     while True:
-
         game_loop()
 
 

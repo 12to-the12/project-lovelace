@@ -2,8 +2,6 @@ from machine import PWM
 from config import config
 
 
-
-
 class Buzzer:
     def __init__(self):
         self.duty = 0

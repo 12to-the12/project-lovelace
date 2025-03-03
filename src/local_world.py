@@ -1,6 +1,3 @@
-
-
-
 class Local_World:
     def __init__(self):
         self.sprites = {}

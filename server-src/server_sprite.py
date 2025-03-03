@@ -172,7 +172,6 @@ class Entity:
         return distance
 
     def advance(self, time):
-
         self.acc = self.force / self.mass
 
         self.vel += self.acc * time

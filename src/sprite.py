@@ -1,13 +1,10 @@
 from time import time_ns  # purely relative value
 from random import uniform
-from lcd import *
 from config import config
 
 dist = lambda x: uniform(-x, x)
 from math import pi as π
 import random
-
-from player_input import button_left, button_right
 
 
 class Vector:
@@ -37,8 +34,8 @@ class Vector:
     # def z(self):
     #     return self.vector[2]
 
-    def elementwise(self, other, operation) -> Vector:
-        if isinstance(other, Vector):
+    def elementwise(self, other, operation):
+        if isinstance(other, type(self)):
             x = operation(self.x, other.x)
             y = operation(self.y, other.y)
             z = operation(self.z, other.z)
@@ -64,16 +61,16 @@ class Vector:
     def __imul__(self, other) -> None:
         return self.elementwise(other, lambda x, y: x + y)
 
-    def __add__(self, other) -> Vector:
+    def __add__(self, other):
         return self.elementwise(other, lambda x, y: x + y)
 
-    def __sub__(self, other) -> Vector:
+    def __sub__(self, other):
         return self.elementwise(other, lambda x, y: x - y)
 
-    def __truediv__(self, other) -> Vector:
+    def __truediv__(self, other):
         return self.elementwise(other, lambda x, y: x / y)
 
-    def __mul__(self, other) -> Vector:
+    def __mul__(self, other):
         return self.elementwise(other, lambda x, y: x * y)
 
 
@@ -162,7 +159,6 @@ class Entity:
         return distance
 
     def advance(self, time):
-
         self.acc = self.force / self.mass
 
         self.vel += self.acc * time
