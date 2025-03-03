@@ -4,3 +4,6 @@
 
 To run, change `secrets_template.py` to `secrets.py`
 and install the libraries missing on the pico using `mip`
+
+
+### data should live on the server

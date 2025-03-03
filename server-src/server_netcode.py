@@ -60,13 +60,15 @@ class World:
         self.friend_vy = random.randint(-5, 5)
 
     def add_client(self, client_id, client_address: str):
-        assert type(client_address) == str, client_address
-        self.clients[client_id] = ServerSprite(client_id, client_address)
+        # assert type(client_address) == str, client_address
+        # self.clients[client_id] = ServerSprite(client_id, client_address)
+        pass
 
     def update_client(self, client_address, client_id, playerstate):
-        if not client_id in self.clients.key():
-            self.add_client(client_id, client_address)
-        self.clients[client_id].pos = playerstate["pos"]
+        # if not client_id in self.clients.key():
+        #     self.add_client(client_id, client_address)
+        # self.clients[client_id].pos = playerstate["pos"]
+        pass
 
     def get_state_packet(self):
         self.friend_x += self.friend_vx
@@ -74,9 +76,9 @@ class World:
         self.friend_x %= 480
         self.friend_y %= 320
         sprites = {}
-        for client_id, client in self.clients.items():
+        # for client_id, client in self.clients.items():
 
-            sprites[client_id] = {"pos": client.pos}
+        #     sprites[client_id] = {"pos": client.pos}
 
         sprites = {}
         # sprites["player"] = {"pos": (self.friend_x, self.friend_y, 0)}
@@ -178,7 +180,6 @@ class network:
                     "type": "OK",
                     "timestamp": epoch(),
                     "world_id": 0,
-                    
                 }
                 print("new client sent join request, returning OK request")
                 client_id = packet["client_id"]

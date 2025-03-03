@@ -241,7 +241,7 @@ class Player(Entity):
             name = kwargs["name"]
 
         self.world = kwargs["world"]
-        self.world.sprites[name] = self
+        # self.world.sprites[name] = self
         super().__init__(*args, **kwargs)
 
     def apply_booster(self, time):
@@ -307,6 +307,10 @@ class World:
 
     def legitimize(self, id):  # means we're network connected...
         self.id = id
+    
+    # def update_from_packet(self,name,worldstate:str):
+    #     self.sprites[packet]
+
 
 
 def build_sprite(state):
