@@ -14,7 +14,9 @@ if args.len == 0:
 
 for fname in args:
     let png = loadPNG24 fname
-
+    if png == nil:
+      echo &"Skipping: \"{fname}\" not found"
+      continue
     echo &"{fname}: {png.width = }, {png.height = }"
     let f = open(fname.changeFileExt("rgb"), fmWrite)
     f.write png.data
