@@ -4,7 +4,7 @@ from time import time_ns as epoch_ns
 import sys
 
 from sprite import Entity
-import network
+# import network
 from netcode import Connection
 from config import config
 from lcd import *
@@ -116,12 +116,13 @@ def game_init():
 
     buzzer.stop()
     lcd_init()
-    lcd_clear()
+    lcd_blit_file("dragons.rgb", 0, 0, width, height)
+    # lcd_clear()
 
     connection = Connection()
     # world = connection.world
 
-    print("starting gameloop...")
+    printsc("starting gameloop...")
     lcd_clear()
     while True:
 
@@ -237,3 +238,6 @@ def game_init():
 #         if config.draw_last_pos:
 #             if config.desktop_mode:
 #                 pygame.draw.circle(screen, (245, 243, 255), static, radius)
+
+if __name__ == "__main__":
+    game_init()
