@@ -177,7 +177,7 @@ class network:
             raise (Exception("<connection terminated>"))
         try:
             if packet["type"] == "playerstate":
-                client_id = packet["client_id"]
+                # client_id = packet["client_id"]
                 world_id = packet["world_id"]
                 self.worlds[world_id].update_client(address, packet["playerstate"])
 
@@ -195,7 +195,7 @@ class network:
                     "world_id": 0,
                 }
                 print("new client sent join request, returning OK request")
-                client_id = packet["client_id"]
+                # client_id = packet["client_id"]
                 self.worlds[0].update_client(address)
                 # self.address_lookup[client_id] = address
                 self.broadcast_queue.put((response, address))

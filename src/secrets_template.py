@@ -1,2 +1,4 @@
 ssid = ""
-password = ""
+wifi_password = ""
+server_address = ""
+

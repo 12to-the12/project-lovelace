@@ -8,7 +8,7 @@ import sys
 from sprite import Entity
 
 # import network
-from netcode import Connection
+from netcode import Server_Connection
 from config import config
 from lcd import *
 from time import sleep
@@ -90,15 +90,7 @@ def game_loop():
     # buzzer.set(player.speed**1.1, 3 * player.speed)
     clock_wait()
 
-
-def game_init():
-    global erase, clock_stamp_ns, readout_timer_ns, connection, readouts
-    clock_stamp_ns = epoch_ns()
-    readouts = Pulse()
-    erase = []
-
-    buzzer.stop()
-    lcd_init()
+def intro():
     if config.production:
         while config.intro:
             lcd_blit_file("star.rgb", 0, 0, width, height)
@@ -167,12 +159,22 @@ def game_init():
         screenwrite.row = randint(10, 120)
     else:
         lcd_clear()
-        print("skipping intro...")
-    connection = Connection()
+        print("skipping intro...")    
+def game_init():
+    global erase, clock_stamp_ns, readout_timer_ns, connection, readouts
+    clock_stamp_ns = epoch_ns()
+    readouts = Pulse()
+    erase = []
+
+    buzzer.stop()
+    lcd_init()
+    
+    connection = Server_Connection()
     # world = connection.world
 
     printsc("starting gameloop...")
     lcd_clear()
+def start_loop():
     while True:
 
         game_loop()

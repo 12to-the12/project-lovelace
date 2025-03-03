@@ -1,5 +1,5 @@
-import machine
-import usocket as socket
+import secrets
+import socket
 from time import sleep
 from ujson import dumps
 from ujson import loads as deserialize
@@ -10,7 +10,9 @@ from time import time_ns as epoch_ns
 from sprite import world
 from time import time as epoch
 from config import config
-from machine import soft_reset as quit
+import secrets
+
+# from machine import soft_reset as quit
 from timing import Pulse
 from screenwrite import printsc
 
@@ -52,29 +54,12 @@ def serialize(packet):
 sleep_ms = lambda x: sleep(x / 1000)
 
 
-class Connection:
+class Network_Connection:
     def __init__(self):
-        self.snapshot_interval_ms = config.snapshot_interval_ms  # ms
-
-        self.worldstate = {}
-        self.server_address = config.server_address
-
-        self.start = epoch()
-        self.packets_received = 0
-        self.bad_packets_received = 0
-        self.bad_packet_threshold_ms = 1.8
-
-        self.broadcast_queue = Queue()
-        self.pings = Pulse()
-
-        printsc("starting network operations")
         self.connect_to_wifi()
-        self.syncronize_time()
         self.init_udp()
-        self.initiate_duplex_udp_connection()
 
     def connect_to_wifi(self):
-        from secrets import ssid, password
 
         print("Wifi")
         wlan = network.WLAN(network.STA_IF)
@@ -82,7 +67,7 @@ class Connection:
         print(wlan)
         wlan.active(True)
         print("wlan activated")
-        wlan.connect(ssid, password)
+        wlan.connect(secrets.ssid, secrets.wifi_password)
         printsc("Connecting to WiFi", end="")
         while not wlan.isconnected():
             printsc(".", end="")
@@ -92,6 +77,58 @@ class Connection:
         # print(wlan.isconnected())
         # print(wlan.ifconfig())
         printsc()
+
+    def init_udp(self):
+        self.listening_port = 5003
+
+        self.udp_receiver_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+        self.udp_receiver_sock.setblocking(False)
+
+        print(f"binding receiver to {self.listening_port}")
+        addr = socket.getaddrinfo(
+            "0.0.0.0", self.listening_port, 0, socket.SOCK_STREAM
+        )[0][-1]
+        self.udp_receiver_sock.bind(addr)
+
+        self.udp_sender = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+    def udp_scan(self):
+        data, (address, port) = self.udp_receiver_sock.recvfrom(2048)
+        packet = deserialize(data)
+        # if addr != self.server_address:
+        #     raise (Exception("received packet from non server address"))
+        return packet
+
+    def udp_send(self, packet, address, port):
+        data = serialize(packet)
+        addr = socket.getaddrinfo(address, port, 0, socket.SOCK_STREAM)[0][-1]
+
+        self.udp_sender.sendto(data, addr)
+
+
+class Server_Connection:
+    def __init__(self):
+        
+
+        self.snapshot_interval_ms = config.snapshot_interval_ms  # ms
+
+        self.worldstate = {}
+        self.addr = secrets.server_address
+        self.port = 5002
+        self.start = epoch()
+        self.packets_received = 0
+        self.bad_packets_received = 0
+        self.bad_packet_threshold_ms = 1.8
+
+        self.broadcast_queue = Queue()
+        self.pings = Pulse()
+
+        printsc("starting network operations")
+        self.network = Network_Connection()
+
+        self.syncronize_time()
+        self.initiate_duplex_udp_connection()
 
     def syncronize_time(self):
         from time import localtime
@@ -123,23 +160,23 @@ class Connection:
 
     def initiate_duplex_udp_connection(self):
         # perform connection routine
-        self.machine_id = hash(machine.unique_id())
+        # self.machine_id = hash(machine.unique_id())
         JOIN = {
             "type": "join",
             "timestamp": self.timestamp(),
-            "client_id": self.machine_id,
+            # "client_id": self.machine_id,
         }
 
         waiting = True
         while waiting:
-            self.udp_send(JOIN)
+            self.network.udp_send(JOIN, self.addr, self.port)
             printsc(
-                f"\njoin request sent to {self.server_address}, waiting for reply",
+                f"\njoin request sent to {self.addr}, waiting for reply",
                 end="",
             )
             for _ in range(10):
                 try:
-                    packet = self.udp_scan()
+                    packet = self.network.udp_scan()
                     if packet:
                         print(packet)
                         waiting = False
@@ -188,7 +225,7 @@ class Connection:
     def send_playerstate(self):
         packet = {
             "type": "playerstate",
-            "client_id": self.machine_id,
+            # "client_id": self.machine_id,
             "world_id": getattr(self, "world_id", 0),
             "timestamp": epoch_float(),
             "playerstate": {
@@ -212,7 +249,7 @@ class Connection:
             )
 
         try:
-            packet = self.udp_scan()
+            packet = self.network.udp_scan()
             if packet:
                 self.handle_packet(packet)
         except OSError as e:
@@ -221,40 +258,12 @@ class Connection:
 
         while self.broadcast_queue.qsize() > 0:
             packet = self.broadcast_queue.get()
-            self.udp_send(packet)
+            self.network.udp_send(packet, self.addr, self.port)
             self.broadcast_queue.task_done()
 
-    def init_udp(self):
-        self.listening_port = 5003
-        self.servers_listening_port = 5002
 
-        self.udp_receiver = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
-        self.udp_receiver.setblocking(False)
-
-        print(f"binding receiver to {self.listening_port}")
-        addr = socket.getaddrinfo(
-            "0.0.0.0", self.listening_port, 0, socket.SOCK_STREAM
-        )[0][-1]
-        self.udp_receiver.bind(addr)
-
-        self.udp_sender = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
-    def udp_scan(self):
-        data, (address, port) = self.udp_receiver.recvfrom(2048)
-        packet = deserialize(data)
-        # if addr != self.server_address:
-        #     raise (Exception("received packet from non server address"))
-        return packet
-
-    def udp_send(self, packet):
-        data = serialize(packet)
-        addr = socket.getaddrinfo(
-            self.server_address, self.servers_listening_port, 0, socket.SOCK_STREAM
-        )[0][-1]
-
-        self.udp_sender.sendto(data, addr)
-
+# def test_start_connection():
+#     connection = Connection()
 
 if __name__ == "__main__":
     print("This is the networking file!")
