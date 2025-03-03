@@ -1,14 +1,13 @@
 import secrets
 import socket
 from time import sleep
-from ujson import dumps
-from ujson import loads as deserialize
-import ntptime
-from sprite import pos_sprite
+from json import dumps
+from json import loads as deserialize
+
+# from sprite import pos_sprite
 import network
-from time import time_ns as epoch_ns
-from sprite import world
-from time import time as epoch
+from world import World
+import time
 from config import config
 import secrets
 
@@ -16,7 +15,6 @@ import secrets
 from timing import Pulse
 from screenwrite import printsc
 
-from time import ticks_ms, ticks_us
 from player_input import button_left, button_right, joystick
 
 # from queue import Queue
@@ -41,10 +39,6 @@ class Queue:
         pass
 
 
-def epoch_float():
-    return float(epoch_ns()) / 1.0e9
-
-
 def serialize(packet):
     data = dumps(packet)
     data = data.encode()
@@ -52,6 +46,37 @@ def serialize(packet):
 
 
 sleep_ms = lambda x: sleep(x / 1000)
+
+
+class Time_Tracker:
+    def __init__(self):
+        import ntptime
+
+        self.syncronize_time()
+
+    def syncronize_time(self):
+        from time import localtime
+
+        printsc("syncronizing time with remote server")
+        # print(ntptime.time())
+        # print(localtime())
+
+        for _ in range(1):
+            try:
+                ntptime.settime()
+                printsc(".", end="")
+                sleep(1)
+            except:
+                break
+        printsc()
+        self.local_epoch = time.time()
+        self.start_offset_us = time.ticks_us()
+
+    def timestamp(self):
+        time_since_ns = time.ticks_us() - self.start_offset_us
+        time_since = time_since_ns / 1e6
+
+        return self.local_epoch + time_since
 
 
 class Network_Connection:
@@ -109,14 +134,12 @@ class Network_Connection:
 
 class Server_Connection:
     def __init__(self):
-        
 
         self.snapshot_interval_ms = config.snapshot_interval_ms  # ms
 
-        self.worldstate = {}
         self.addr = secrets.server_address
         self.port = 5002
-        self.start = epoch()
+
         self.packets_received = 0
         self.bad_packets_received = 0
         self.bad_packet_threshold_ms = 1.8
@@ -126,44 +149,24 @@ class Server_Connection:
 
         printsc("starting network operations")
         self.network = Network_Connection()
+        self.time_tracker = Time_Tracker()
 
-        self.syncronize_time()
+        self.start = self.time_tracker.timestamp()
+
         self.initiate_duplex_udp_connection()
 
-    def syncronize_time(self):
-        from time import localtime
-
-        printsc("syncronizing time with remote server")
-        # print(ntptime.time())
-        # print(localtime())
-
-        for _ in range(1):
-            try:
-                ntptime.settime()
-                printsc(".", end="")
-                sleep(1)
-            except:
-                break
-        printsc()
-
-        self.us_offset = ticks_us
         # this has technique has issues within the second
-        self.local_epoch = epoch()
+
         # except:
         # break
         # print(localtime())
-
-    def timestamp(self):
-        time_since = (ticks_us() - self.us_offset()) / 1e6
-
-        return self.local_epoch + time_since
 
     def initiate_duplex_udp_connection(self):
         # perform connection routine
         # self.machine_id = hash(machine.unique_id())
         JOIN = {
             "type": "join",
-            "timestamp": self.timestamp(),
+            "timestamp": self.time_tracker.timestamp(),
             # "client_id": self.machine_id,
         }
 
@@ -178,9 +181,16 @@ class Server_Connection:
                 try:
                     packet = self.network.udp_scan()
                     if packet:
-                        print(packet)
-                        waiting = False
-                        break
+                        # print(packet)
+                        if packet["type"] == "OK":
+                            printsc("connection established, joining world...")
+                            self.world_id = packet["world_id"]
+                            self.world = World(world_id=self.world_id)
+                            waiting = False
+                            break
+                        else:
+                            print(f"{packet["type"]}")
+                            print("ignoring irrelevant packet...")
 
                 except OSError as e:
                     if e.args[0] != 11:  # ignore if just no data (EAGAIN)
@@ -190,12 +200,6 @@ class Server_Connection:
             sleep(1)
 
         printsc()
-        print(packet)
-        if packet["type"] == "OK":
-            printsc("connection established, joining world...")
-
-            self.world_id = packet["world_id"]
-            world.legitimize(self.world_id)
 
     def handle_packet(self, packet):
         if packet["type"] == "worldstate":
@@ -204,17 +208,17 @@ class Server_Connection:
             for name, data in packet["worldstate"]["sprites"].items():
 
                 # if name not in world.sprites.keys(): self.world.sprites[name]=pos_sprite()
-                world.sprites[name] = data  # dict
+                self.world.sprites[name] = data  # dict
         if packet["type"] == "ping":
             response = {
                 "type": "pong",
-                "timestamp": epoch_float(),
+                "timestamp": self.time_tracker.timestamp(),
                 "original_timestamp": packet["timestamp"],
             }
             self.broadcast_queue.put(response)
         if packet["type"] == "pong":
             original_timestamp = packet["original_timestamp"]
-            now = epoch_float()
+            now = self.time_tracker.timestamp()
             elapsed_ms = now - original_timestamp
             print("pong received")
             # print(f"original: {packet["original_timestamp"]:.3f}")
@@ -227,7 +231,7 @@ class Server_Connection:
             "type": "playerstate",
             # "client_id": self.machine_id,
             "world_id": getattr(self, "world_id", 0),
-            "timestamp": epoch_float(),
+            "timestamp": self.time_tracker.timestamp(),
             "playerstate": {
                 "x": joystick.x,
                 "y": joystick.y,
@@ -244,7 +248,7 @@ class Server_Connection:
             self.broadcast_queue.put(
                 {
                     "type": "ping",
-                    "timestamp": epoch_float(),
+                    "timestamp": self.time_tracker.timestamp(),
                 }
             )
 
@@ -262,8 +266,10 @@ class Server_Connection:
             self.broadcast_queue.task_done()
 
 
-# def test_start_connection():
-#     connection = Connection()
+# def test_server_connection():
+#     server_connection = Server_Connection()
+#     print(server_connection)
+
 
 if __name__ == "__main__":
     print("This is the networking file!")

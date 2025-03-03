@@ -1,5 +1,4 @@
 from lcd import *
-from sprite import world
 from random import randint
 
 col_start = randint(10, 120)

@@ -83,6 +83,7 @@ class Entity:
     w = 32
     h = 32
     frame_count = 8
+
     def __init__(
         self,
         worldspace_position=None,
@@ -93,7 +94,6 @@ class Entity:
         rotational_velocity=None,
         rotational_inertia=None,
         mass=None,
-        world=None,
         bounds=(480, 320),
         name=None,
     ):
@@ -120,8 +120,6 @@ class Entity:
         if not mass:
             mass = 1
 
-        assert world
-
         self.pos = worldspace_position
         self.vel = velocity
         self.acc = acceleration
@@ -134,8 +132,6 @@ class Entity:
         self.force_factor = config.force_factor
         self.sap = config.sap
         self.booster = config.booster
-
-        self.world = world
 
         # assert (type(self.acc.x) == int) or (type(self.acc.x) == float), type(
         #     self.acc.x
@@ -218,19 +214,20 @@ class Entity:
     def serialize(self):
         pass
 
-    def screen_coords(self):
-        screenspace_x = int(self.pos.x - self.world.viewport_entity.pos.x)
-        screenspace_y = int(self.pos.y - self.world.viewport_entity.pos.y)
-        # screenspace_x = int(self.pos.x)
-        # screenspace_y = int(self.pos.y)
-        return (screenspace_x, screenspace_y)
+    # def screen_coords(self):
+    #     screenspace_x = int(self.pos.x - self.world.viewport_entity.pos.x)
+    #     screenspace_y = int(self.pos.y - self.world.viewport_entity.pos.y)
+    #     # screenspace_x = int(self.pos.x)
+    #     # screenspace_y = int(self.pos.y)
+    #     return (screenspace_x, screenspace_y)
 
     def draw(self):
-        x, y = self.screen_coords()
-        lcd_blit_file(self.fname, int(x - self.w/2), int(y - self.h/2), self.w, self.h, int(self.frame))
-        self.frame += .25
+        # x, y = self.screen_coords()
+        # lcd_blit_file(self.fname, int(x - self.w/2), int(y - self.h/2), self.w, self.h, int(self.frame))
+        self.frame += 0.25
         if self.frame >= self.frame_count:
             self.frame = 0
+        return (self.fname, self.pos.x, self.pos.y, self.w, self.h)
 
 
 class Player(Entity):
@@ -275,6 +272,7 @@ class Player(Entity):
 
         self.force += force_vector
 
+
 def mix(a, a_weight, b, b_weight):
     a = build_sprite(a)
     b = build_sprite(b)
@@ -296,23 +294,6 @@ def mix(a, a_weight, b, b_weight):
     return Entity(worldspace_position=pos, velocity=vel, acceleration=acc)
 
 
-class World:
-    def __init__(self):
-        self.display_width = 480
-        self.display_height = 320
-        # where the world is in relation to the viewport
-        # top left corner of the screen
-        self.sprites = {}
-        self.viewport_entity = Entity(world=self)
-
-    def legitimize(self, id):  # means we're network connected...
-        self.id = id
-    
-    # def update_from_packet(self,name,worldstate:str):
-    #     self.sprites[packet]
-
-
-
 def build_sprite(state):
     pos = state["position"]
     vec = state["velocity"]
@@ -320,27 +301,20 @@ def build_sprite(state):
     return Entity(Vector(*pos), Vector(*vec), Vector(*acc))
 
 
-world = World()
-
-
 def pos_sprite(name, pos):
     if name.startswith("player"):
         player_id = int(name[6:] or 0)
-        color = ["red","green","blue", "yellow"][player_id % 4]
-        e = Player(Vector(*pos), world=world)
+        color = ["red", "green", "blue", "yellow"][player_id % 4]
+        e = Player(Vector(*pos))
         e.fname = f"dragon{color}.rgb"
         w = 32
         h = 32
     if name == "hole":
         w = 64
         h = 64
-        e = Entity(Vector(*pos), name=name, world=world)
+        e = Entity(Vector(*pos), name=name)
         e.fname = "blackhole.rgb"
         e.frame_count = 1
     e.w = w
     e.h = h
     return e
-
-
-# player = Player(name="player", world=world)
-

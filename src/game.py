@@ -1,3 +1,4 @@
+from display import display
 import player_input
 import sprite
 from time import sleep, sleep_ms, sleep_us
@@ -16,7 +17,6 @@ from player_input import button_left, button_right
 
 # from sprite import player
 from timing import Pulse
-from sprite import world
 from buzzer import buzzer
 from screenwrite import printsc
 import screenwrite
@@ -51,26 +51,8 @@ def clock_wait():
 #     world.viewport_entity.apply()
 
 
-def draw_sprites():
-    global erase
-
-    lcd_set_color(0,0,0)
-    for _ in erase:
-        x, y, w, h = erase.pop()
-        lcd_fill(int(x - w/2), int(y - w/2), w, h)
-    for name, values in world.sprites.items():
-        print(f"{name}:{values}")
-        x, y, _ = values["pos"]
-        # print(sprite)
-        # sprite.draw()
-        w, h = values["dim"]
-        lcd_blit_file(values["fname"], int(x - w/2), int(y - w/2), w, h, values.get("frame"))
-        erase.insert(0, (x, y, w, h))
-
-
 # @timefunct
 def game_loop():
-    global erase, connection
     # direction, button1, button2 = readinput()
 
     # network io
@@ -81,7 +63,7 @@ def game_loop():
 
     # # do_physics(player, direction)
     connection.send_playerstate()
-    draw_sprites()
+    display.draw_world(connection.world)
 
     connection.loop_over_io()
 
@@ -89,6 +71,7 @@ def game_loop():
     # print(f"{player.speed=}  {player.speed**2=}")
     # buzzer.set(player.speed**1.1, 3 * player.speed)
     clock_wait()
+
 
 def intro():
     if config.production:
@@ -159,7 +142,9 @@ def intro():
         screenwrite.row = randint(10, 120)
     else:
         lcd_clear()
-        print("skipping intro...")    
+        print("skipping intro...")
+
+
 def game_init():
     global erase, clock_stamp_ns, readout_timer_ns, connection, readouts
     clock_stamp_ns = epoch_ns()
@@ -168,12 +153,14 @@ def game_init():
 
     buzzer.stop()
     lcd_init()
-    
+
     connection = Server_Connection()
     # world = connection.world
 
     printsc("starting gameloop...")
     lcd_clear()
+
+
 def start_loop():
     while True:
 
