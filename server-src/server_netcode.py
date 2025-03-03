@@ -74,7 +74,8 @@ class World:
             sprites[client_id] = {"pos": client.pos}
 
         sprites = {}
-        sprites["friend"] = {"pos": (self.friend_x, self.friend_y, 0)}
+        sprites["player"] = {"pos": (self.friend_x, self.friend_y, 0)}
+        sprites["hole"] = {"pos": (240, 160, 0)}
         # for client in self.clients:
         #     sprites[client.client_id] = {"pos": client.pos}
 
@@ -143,7 +144,7 @@ class network:
         self.worldstate_writer_thread.start()
 
         while True:
-            sleep(10)
+            sleep(1/2)
 
     def close_sockets(self):
         for sock in self.sockets:
@@ -196,13 +197,14 @@ class network:
 
     # sends worldstate of given worlds to the IP addresses of connected clients
     def worldstate_writer(self):
+        delay = 1 / config.fps
         while True:
             for world in self.worlds.values():
                 for server_sprite in world.clients.values():
                     self.broadcast_queue.put(
                         (world.get_state_packet(), server_sprite.address)
                     )
-            sleep_ms(1000)
+            sleep(delay)
 
     # world packets will be added to it's queue
     def udp_packet_output_hub(self, sock):
