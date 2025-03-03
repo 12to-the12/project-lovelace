@@ -1,4 +1,4 @@
-from os import posix_fadvise, times_result, wait
+# from os import posix_fadvise, times_result, wait
 
 # import ssl
 
@@ -38,21 +38,10 @@ from worldstate import worldstate
 
 sleep_ms = lambda x: sleep(x / 1000)
 
-last_player_id = 0
-
-
-# class ServerSprite:
-#     def __init__(self, client_id, address):
-#         # self.client_id = client_id
-#         global last_player_id
-#         last_player_id += 1
-#         player_id = last_player_id
-#         self.client_id = f"player{player_id}"
-#         self.address = address
-#         self.pos = None
 
 
 class World:
+    next_player_id = 0
     def __init__(self, world_id):
         self.world_id = world_id
         self.clients = {}
@@ -69,8 +58,10 @@ class World:
 
     def add_client(self, client_address: str):
         # assert type(client_address) == str, client_address
-        self.clients[client_address] = Entity(world=self)
-        pass
+        entity = Entity(world=self)
+        entity.player_id = self.next_player_id
+        self.next_player_id += 1
+        self.clients[client_address] = entity
 
     def update_client(self, client_address, playerstate=None):
         if not client_address in self.clients.keys():
@@ -92,13 +83,16 @@ class World:
         self.friend_y %= 320
         sprites = {}
         for client_address, client_sprite in self.clients.items():
-            sprites[client_address] = {
-                "pos": [client_sprite.pos.x, client_sprite.pos.y, client_sprite.pos.z]
+            sprites[f"player{client_sprite.player_id}"] = {
+                "pos": [client_sprite.pos.x, client_sprite.pos.y, client_sprite.pos.z],
+                "fname": client_sprite.fname,
+                "dim": (client_sprite.w, client_sprite.h),
+                "frame": client_sprite.frame
             }
 
         # sprites = {}
         # sprites["player"] = {"pos": (self.friend_x, self.friend_y, 0)}
-        sprites["hole"] = {"pos": (240, 160, 0)}
+        sprites["hole"] = {"fname": "blackhole.rgb", "dim": (64, 64), "pos": (240, 160, 0)}
         # for client in self.clients:
         #     sprites[client.client_id] = {"pos": client.pos}
 
