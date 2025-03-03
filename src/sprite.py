@@ -78,6 +78,11 @@ class Vector:
 
 
 class Entity:
+    frame = 0
+    fname = "dragonyellow.rgb"
+    w = 32
+    h = 32
+    frame_count = 8
     def __init__(
         self,
         worldspace_position=None,
@@ -220,9 +225,15 @@ class Entity:
         # screenspace_y = int(self.pos.y)
         return (screenspace_x, screenspace_y)
 
+    def draw(self):
+        x, y = self.screen_coords()
+        lcd_blit_file(self.fname, int(x - self.w/2), int(y - self.h/2), self.w, self.h, int(self.frame))
+        self.frame += .25
+        if self.frame >= self.frame_count:
+            self.frame = 0
+
 
 class Player(Entity):
-    frame = 0
     def __init__(self, *args, **kwargs) -> None:
         if not "name" in kwargs.keys():
             name = random.random()
@@ -232,28 +243,6 @@ class Player(Entity):
         self.world = kwargs["world"]
         self.world.sprites[name] = self
         super().__init__(*args, **kwargs)
-
-    def draw(self):
-        # print("drawing")
-        fname = "yellowdragon.rgb"
-        w = 32
-        h = 32
-        frame_count = 8
-        x, y = self.screen_coords()
-        xv = int(abs(self.vel.x)) or 1
-        yv = int(abs(self.vel.y)) or 1
-        # lcd_fill(
-        #     x - xv, y - yv, w + 2 * xv, yv
-        # )  # top TODO: not sure why I had to do height of 2 (should be 1) in order to avoid artifacts
-        # lcd_fill(
-        #     x - xv, y + h, w + 2 * xv, yv
-        # )  # bottom TODO: not sure why I had to do height of 2 (should be 1) in order to avoid artifacts
-        # lcd_fill(x - xv, y, xv, h)  # left
-        # lcd_fill(x + w, y, xv, h)  # right
-        lcd_blit_file(fname, x, y, w, h, int(self.frame))
-        self.frame += .25
-        if self.frame >= frame_count:
-            self.frame = 0
 
     def apply_booster(self, time):
         if self.vel.mag:
@@ -285,7 +274,6 @@ class Player(Entity):
         force_vector = norm_offset * force
 
         self.force += force_vector
-
 
 def mix(a, a_weight, b, b_weight):
     a = build_sprite(a)
@@ -331,9 +319,24 @@ def build_sprite(state):
 world = World()
 
 
-def pos_sprite(pos):
-    return Player(Vector(*pos), world=world)
+def pos_sprite(name, pos):
+    if name.startswith("player"):
+        player_id = int(name[6:] or 0)
+        color = ["red","green","blue", "yellow"][player_id % 4]
+        e = Player(Vector(*pos), world=world)
+        e.fname = f"dragon{color}.rgb"
+        w = 32
+        h = 32
+    if name == "hole":
+        w = 64
+        h = 64
+        e = Entity(Vector(*pos), name=name, world=world)
+        e.fname = "blackhole.rgb"
+        e.frame_count = 1
+    e.w = w
+    e.h = h
+    return e
 
 
-player = Player(name="player", world=world)
+# player = Player(name="player", world=world)
 
