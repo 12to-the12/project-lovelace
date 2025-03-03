@@ -1,4 +1,4 @@
-from os import times_result, wait
+from os import posix_fadvise, times_result, wait
 
 # import ssl
 
@@ -11,6 +11,7 @@ from time import time as epoch
 import sys
 
 from queue import Queue
+from server_sprite import Entity
 
 # from msgpack import unpackb as deserialize
 # from msgpack import packb as serialize
@@ -39,15 +40,16 @@ sleep_ms = lambda x: sleep(x / 1000)
 
 last_player_id = 0
 
-class ServerSprite:
-    def __init__(self, client_id, address):
-        # self.client_id = client_id
-        global last_player_id
-        last_player_id += 1
-        player_id = last_player_id
-        self.client_id = f"player{player_id}"
-        self.address = address
-        self.pos = None
+
+# class ServerSprite:
+#     def __init__(self, client_id, address):
+#         # self.client_id = client_id
+#         global last_player_id
+#         last_player_id += 1
+#         player_id = last_player_id
+#         self.client_id = f"player{player_id}"
+#         self.address = address
+#         self.pos = None
 
 
 class World:
@@ -59,16 +61,29 @@ class World:
         self.friend_vx = random.randint(-5, 5)
         self.friend_vy = random.randint(-5, 5)
 
-    def add_client(self, client_id, client_address: str):
+        self.display_width = 480
+        self.display_height = 320
+        # where the world is in relation to the viewport
+        # top left corner of the screen
+        self.viewport_entity = Entity(world=self)
+
+    def add_client(self, client_address: str):
         # assert type(client_address) == str, client_address
-        self.clients[client_id] = client_address
+        self.clients[client_address] = Entity(world=self)
         pass
 
-    def update_client(self, client_address, client_id, playerstate):
-        # if not client_id in self.clients.key():
-        #     self.add_client(client_id, client_address)
-        # self.clients[client_id].pos = playerstate["pos"]
-        pass
+    def update_client(self, client_address, playerstate=None):
+        if not client_address in self.clients.keys():
+            self.add_client(client_address)
+        if playerstate:
+
+            # print(f"{playerstate}")
+            # assert "pos" in playerstate.keys()
+            # position_list = playerstate["pos"]
+            x = playerstate["x"]
+            y = playerstate["y"]
+            self.clients[client_address].push([x, y])
+            self.clients[client_address].apply()
 
     def get_state_packet(self):
         self.friend_x += self.friend_vx
@@ -76,11 +91,12 @@ class World:
         self.friend_x %= 480
         self.friend_y %= 320
         sprites = {}
-        # for client_id, client in self.clients.items():
+        for client_address, client_sprite in self.clients.items():
+            sprites[client_address] = {
+                "pos": [client_sprite.pos.x, client_sprite.pos.y, client_sprite.pos.z]
+            }
 
-        #     sprites[client_id] = {"pos": client.pos}
-
-        sprites = {}
+        # sprites = {}
         # sprites["player"] = {"pos": (self.friend_x, self.friend_y, 0)}
         sprites["hole"] = {"pos": (240, 160, 0)}
         # for client in self.clients:
@@ -164,9 +180,7 @@ class network:
             if packet["type"] == "playerstate":
                 client_id = packet["client_id"]
                 world_id = packet["world_id"]
-                self.worlds[world_id].update_client(
-                    address, client_id, packet["playerstate"]
-                )
+                self.worlds[world_id].update_client(address, packet["playerstate"])
 
             if packet["type"] == "ping":
                 response = {
@@ -183,7 +197,7 @@ class network:
                 }
                 print("new client sent join request, returning OK request")
                 client_id = packet["client_id"]
-                self.worlds[0].add_client(client_id, address)
+                self.worlds[0].update_client(address)
                 # self.address_lookup[client_id] = address
                 self.broadcast_queue.put((response, address))
                 print("response added to queue")
@@ -206,10 +220,8 @@ class network:
         delay = 1 / config.fps
         while True:
             for world in self.worlds.values():
-                for address in world.clients.values():
-                    self.broadcast_queue.put(
-                        (world.get_state_packet(), address)
-                    )
+                for address, entity in world.clients.items():
+                    self.broadcast_queue.put((world.get_state_packet(), address))
             sleep(delay)
 
     # world packets will be added to it's queue
