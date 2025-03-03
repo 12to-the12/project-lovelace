@@ -4,13 +4,11 @@ Sprites have a serialize method
 player update to server:
 {
     "timestamp":543223542543,
-    "playerstate":{
-        "location":(0,0,0),
-        "velocity":(0,0,0),
-        "acceleration":(0,0,0),
-        "health":000,
-        
-    }
+    "x":0.0000,
+    "y":0.333333,
+    "A":1,
+    "B":false,
+    touch:[],
 }
 
 

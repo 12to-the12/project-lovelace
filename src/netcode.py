@@ -15,6 +15,7 @@ from timing import Pulse
 from screenwrite import printsc
 
 from time import ticks_ms, ticks_us
+from player_input import button_left, button_right, joystick
 
 # from queue import Queue
 
@@ -158,15 +159,10 @@ class Connection:
 
     def handle_packet(self, packet):
         if packet["type"] == "worldstate":
-            # print(packet)
-            for sprite in packet["worldstate"]["sprites"]:
-                if sprite not in world.sprites:
-                    position = packet["worldstate"]["sprites"][sprite]["pos"]
-                    world.sprites[sprite] = pos_sprite(sprite, position)
-                else:
-                    x, y, _ = packet["worldstate"]["sprites"][sprite]["pos"]
-                    world.sprites[sprite].pos.x = x
-                    world.sprites[sprite].pos.y = y
+            print("received worldstate:")
+            print(packet)
+            for name, data in packet["worldstate"]["sprites"].items():
+                world.sprites[name] = data  # dict
         if packet["type"] == "ping":
             response = {
                 "type": "pong",
@@ -183,6 +179,22 @@ class Connection:
             # print(f"remote: {packet["timestamp"]:.2f}")
             # print(f"now: {now:.2f}")
             print(f"{elapsed_ms}ms roundtrip\n")
+
+    def send_playerstate(self):
+        packet = {
+            "type": "playerstate",
+            "client_id": self.machine_id,
+            "world_id": self.world_id,
+            "timestamp": epoch_float(),
+            "playerstate": {
+                "x": joystick.x,
+                "y": joystick.y,
+                "left": button_left(),
+                "right": button_right(),
+                "screen_presses": [],
+            },
+        }
+        self.broadcast_queue.put(packet)
 
     def loop_over_io(self):
         if self.pings.read() and config.pingmode:

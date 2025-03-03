@@ -1,3 +1,5 @@
+import display
+import player_input
 from time import sleep, sleep_ms, sleep_us
 from time import time as epoch
 from time import time_ns as epoch_ns
@@ -31,14 +33,6 @@ def clock_wait():
     elapsed = elapsed_ns / 1e9
     target = 1 / config.fps  # seconds per frame
     diff = target - elapsed  # time needed to sleep in seconds
-    # readout(f"elapsed: {elapsed*1_000:5.2f}ms")
-
-    # readout(
-    #     f"elapsed: {elapsed*1_000:5.2f}ms,target: {target*1_000:5.2f}ms, sleeping {int(diff * 1e3)} ms"
-    # )
-
-    # readout(f"fps: {1 / elapsed}")
-
     if elapsed < target:
         # print("sleeping...")
         sleep_us(int(diff * 1e6))
@@ -46,12 +40,12 @@ def clock_wait():
     clock_stamp_ns = epoch_ns()
 
 
-def do_physics(player, direction):
-    player.push(direction)
-    player.apply()
-    # world.viewport_entity.vel.x = 10
-    # world.viewport_entity.pos.x %= 480
-    world.viewport_entity.apply()
+# def do_physics(player, direction):
+#     player.push(direction)
+#     player.apply()
+#     # world.viewport_entity.vel.x = 10
+#     # world.viewport_entity.pos.x %= 480
+#     world.viewport_entity.apply()
 
 
 def draw_sprites():
@@ -59,35 +53,17 @@ def draw_sprites():
 
     for _ in erase:
         x, y = erase.pop()
-        # x -= world.viewport_entity.pos.x
-        # y -= world.viewport_entity.pos.y
-        # if (
-        #     (x < 0)
-        #     or (y > world.display_width)
-        #     or (y < 0)
-        #     or (y > world.display_height)
-        # ):
-        #     continue
-        # lcd_set_color(0, 0, 0)
-        # lcd_fill(int(x), int(y), 32, 32)
-
-        # lcd_set_color(255, 255, 0)
-        # lcd_draw_pixel(int(x), int(y))
-
-    for sprite in world.sprites.values():
+    for x, y in world.sprites["pos"]:
         # print(sprite)
-        sprite.draw()
-        # lcd_set_color(randint(0, 255), randint(100, 255), randint(0, 100))
-
-        # lcd_draw_text(*sprite.screen_coords(), ":-+-:")
-        # print(sprite.screen_coords())
-        erase.insert(0, sprite.screen_coords())
+        # sprite.draw()
+        display.draw("dragon", x, y)
+        erase.insert(0, (x, y))
 
 
 # @timefunct
 def game_loop():
     global erase, connection
-    direction, button1, button2 = readinput()
+    # direction, button1, button2 = readinput()
 
     # network io
     # control input
@@ -95,7 +71,9 @@ def game_loop():
     # movement and collisions
     # update audio
 
-    # do_physics(player, direction)
+    # # do_physics(player, direction)
+    connection.send_playerstate()
+    connection.loop_over_io()
     draw_sprites()
 
     connection.loop_over_io()

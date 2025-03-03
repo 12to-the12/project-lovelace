@@ -86,11 +86,11 @@ def readdesktopinput():
         return (x, y)
 
 
-def readinputboard():
-    return joystick.read(), button_left(), button_left()
+# def serialized_input():
+#     return joystick.read(), button_left(), button_left()
 
 
-if config.desktop_mode:
-    readinput = readdesktopinput
-else:
-    readinput = readinputboard
+# if config.desktop_mode:
+#     readinput = readdesktopinput
+# else:
+#     readinput = readinputboard
