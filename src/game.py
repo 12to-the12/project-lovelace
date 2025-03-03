@@ -1,4 +1,3 @@
-from display import display
 import player_input
 import sprite
 from time import sleep, sleep_ms, sleep_us
@@ -55,16 +54,18 @@ def clock_wait():
 def draw_sprites():
     global erase
 
+    lcd_set_color(0,0,0)
     for _ in erase:
-        x, y = erase.pop()
+        x, y, w, h = erase.pop()
+        lcd_fill(int(x), int(y), w, h)
     for name, values in world.sprites.items():
         print(f"{name}:{values}")
         x, y, _ = values["pos"]
         # print(sprite)
         # sprite.draw()
-
-        lcd_blit_file("dragonyellow.rgb", int(x), int(y), 32, 32)
-        erase.insert(0, (x, y))
+        w, h = values["dim"]
+        lcd_blit_file(values["fname"], int(x), int(y), w, h, values.get("frame"))
+        erase.insert(0, (x, y, w, h))
 
 
 # @timefunct

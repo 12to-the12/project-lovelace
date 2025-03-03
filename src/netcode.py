@@ -153,7 +153,7 @@ class Connection:
             sleep(1)
 
         printsc()
-        # print(packet)
+        print(packet)
         if packet["type"] == "OK":
             printsc("connection established, joining world...")
 
@@ -189,7 +189,7 @@ class Connection:
         packet = {
             "type": "playerstate",
             "client_id": self.machine_id,
-            "world_id": self.world_id,
+            "world_id": getattr(self, "world_id", 0),
             "timestamp": epoch_float(),
             "playerstate": {
                 "x": joystick.x,
