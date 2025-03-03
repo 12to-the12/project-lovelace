@@ -63,7 +63,7 @@ def draw_sprites():
         # print(sprite)
         # sprite.draw()
 
-        lcd_blit_file("dragonyellow.rgb", x, y, 32, 32)
+        lcd_blit_file("dragonyellow.rgb", int(x), int(y), 32, 32)
         erase.insert(0, (x, y))
 
 
