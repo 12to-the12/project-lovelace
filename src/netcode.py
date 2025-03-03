@@ -158,11 +158,11 @@ class Connection:
 
     def handle_packet(self, packet):
         if packet["type"] == "worldstate":
-            print(packet)
+            # print(packet)
             for sprite in packet["worldstate"]["sprites"]:
                 if sprite not in world.sprites:
                     position = packet["worldstate"]["sprites"][sprite]["pos"]
-                    world.sprites[sprite] = pos_sprite(position)
+                    world.sprites[sprite] = pos_sprite(sprite, position)
                 else:
                     x, y, _ = packet["worldstate"]["sprites"][sprite]["pos"]
                     world.sprites[sprite].pos.x = x
