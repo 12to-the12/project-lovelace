@@ -222,6 +222,7 @@ class Entity:
 
 
 class Player(Entity):
+    frame = 0
     def __init__(self, *args, **kwargs) -> None:
         if not "name" in kwargs.keys():
             name = random.random()
@@ -234,9 +235,10 @@ class Player(Entity):
 
     def draw(self):
         # print("drawing")
-        fname = "dragon sample.rgb"
+        fname = "yellowdragon.rgb"
         w = 32
         h = 32
+        frame_count = 8
         x, y = self.screen_coords()
         xv = int(abs(self.vel.x)) or 1
         yv = int(abs(self.vel.y)) or 1
@@ -248,15 +250,18 @@ class Player(Entity):
         # )  # bottom TODO: not sure why I had to do height of 2 (should be 1) in order to avoid artifacts
         # lcd_fill(x - xv, y, xv, h)  # left
         # lcd_fill(x + w, y, xv, h)  # right
-        lcd_blit_file(fname, x, y, w, h)
+        lcd_blit_file(fname, x, y, w, h, int(self.frame))
+        self.frame += .25
+        if self.frame >= frame_count:
+            self.frame = 0
 
     def apply_booster(self, time):
         if self.vel.mag:
-            print("boosting...")
+            # print("boosting...")
             direction = self.vel / self.vel.mag
-            print(self.force)
+            # print(self.force)
             self.force += direction * time * self.booster
-            print(self.force)
+            # print(self.force)
 
     def apply(self):
         time = self.age
