@@ -343,9 +343,15 @@ def lcd_draw_text(x, y, text, color=(255, 255, 255)):
         cx += 6  # Move right by 6 pixels for the next character
 
 
-def lcd_blit_file(filename, x, y, w, h):
-    with open(filename, "rb") as f:
-        data = f.read(w * h * 3)
+def lcd_blit_file(filename, x, y, w, h, frame=0):
     lcd_set_range(x, y, w, h)
     lcd_draw()
-    spi.write(data)
+    bufsize = 2**13 # 8 kiB
+    dataremaining = w * h * 3
+    with open(filename, "rb") as f:
+        if frame:
+            f.seek(w * h * frame * 3)
+        while dataremaining > 0:
+            data = f.read(min(dataremaining, bufsize))
+            spi.write(data)
+            dataremaining -= len(data)
