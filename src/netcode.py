@@ -133,7 +133,10 @@ class Connection:
         waiting = True
         while waiting:
             self.udp_send(JOIN)
-            printsc("\njoin request sent, waiting for reply", end="")
+            printsc(
+                f"\njoin request sent to {self.server_address}, waiting for reply",
+                end="",
+            )
             for _ in range(10):
                 try:
                     packet = self.udp_scan()
@@ -162,6 +165,8 @@ class Connection:
             print("received worldstate:")
             print(packet)
             for name, data in packet["worldstate"]["sprites"].items():
+
+                # if name not in world.sprites.keys(): self.world.sprites[name]=pos_sprite()
                 world.sprites[name] = data  # dict
         if packet["type"] == "ping":
             response = {

@@ -45,7 +45,7 @@ class ServerSprite:
         global last_player_id
         last_player_id += 1
         player_id = last_player_id
-        self.client_id = f'player{player_id}'
+        self.client_id = f"player{player_id}"
         self.address = address
         self.pos = None
 
@@ -61,7 +61,7 @@ class World:
 
     def add_client(self, client_id, client_address: str):
         # assert type(client_address) == str, client_address
-        # self.clients[client_id] = ServerSprite(client_id, client_address)
+        self.clients[client_id] = client_address
         pass
 
     def update_client(self, client_address, client_id, playerstate):
@@ -151,7 +151,7 @@ class network:
         self.worldstate_writer_thread.start()
 
         while True:
-            sleep(1/2)
+            sleep(1 / 2)
 
     def close_sockets(self):
         for sock in self.sockets:
@@ -206,9 +206,9 @@ class network:
         delay = 1 / config.fps
         while True:
             for world in self.worlds.values():
-                for server_sprite in world.clients.values():
+                for address in world.clients.values():
                     self.broadcast_queue.put(
-                        (world.get_state_packet(), server_sprite.address)
+                        (world.get_state_packet(), address)
                     )
             sleep(delay)
 

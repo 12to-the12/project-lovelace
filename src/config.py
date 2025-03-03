@@ -1,4 +1,3 @@
-
 class Config:
     def __init__(self):
         self.temporal_adjustment_ms = 50
@@ -14,7 +13,8 @@ class Config:
 
         # self.server_address = "lovelace.loganhillyer.me"
         # self.server_address = "192.168.4.141"
-        self.server_address = "172.20.10.9"
+        self.server_address="192.168.4.131"
+        # self.server_address = "172.20.10.9"
         self.snapshot_interval_ms = 20
         self.force_factor = 1e2
         self.sap = 0.8
@@ -22,6 +22,7 @@ class Config:
         self.fps = 60  # limiter
         self.max_volume = 1
         self.intro = True
+        self.production = False
 
 
 config = Config()
