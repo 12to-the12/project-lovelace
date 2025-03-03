@@ -9,13 +9,13 @@ from netcode import Connection
 from config import config
 from lcd import *
 from time import sleep
-from player_input import readinput
-from sprite import player
+from player_input import readinput, button_left, button_right
+# from sprite import player
 from timing import Pulse
 from sprite import world
 from buzzer import buzzer
 from screenwrite import printsc
-
+import screenwrite
 
 def readout(things):
     global readouts
@@ -95,14 +95,14 @@ def game_loop():
     # movement and collisions
     # update audio
 
-    do_physics(player, direction)
+    # do_physics(player, direction)
     draw_sprites()
 
     connection.loop_over_io()
 
-    readout(
-        f"\nplayer position:{player.screen_coords()}"
-    )
+    # readout(
+    #     f"\nplayer position:{player.screen_coords()}"
+    # )
     # print(f"{player.speed=}  {player.speed**2=}")
     # buzzer.set(player.speed**1.1, 3 * player.speed)
     clock_wait()
@@ -116,8 +116,47 @@ def game_init():
 
     buzzer.stop()
     lcd_init()
+    while config.intro:
+        lcd_blit_file("star.rgb", 0, 0, width, height)
+        printsc("In the darkness of the cosmos...")
+        if button_left() and button_right(): break
+        printsc("There is the light... of stars.")
+        if button_left() and button_right(): break
+        printsc("Brilliant, blinding light. Truly, a beauty to behold from afar.")
+        if button_left() and button_right(): break
+        printsc("But even more so, up close.")
+        if button_left() and button_right(): break
+        printsc("\nPress a button to continue.")
+        while not (button_left() or button_right()):
+            pass
+        lcd_blit_file("dragons.rgb", 0, 0, width, height)
+        screenwrite.col_start = randint(10, 100)
+        screenwrite.col = screenwrite.col_start
+        screenwrite.row = randint(10, 50)
+        printsc("And for the dragons that lurk in the deep heavy darkness of space, the desire for these beautiful shining artifacts is so very powerful.")
+        if button_left() and button_right(): break
+        printsc("Powerful enough to drive the greedy dragons in search of their shards, stardust, and gems into the vast and dangerous unknown.")
+        if button_left() and button_right(): break
+        printsc("The corners of the galaxy they have yet to explore, are where the stars slumber.")
+        if button_left() and button_right(): break
+        printsc("And so that is where they must go--")
+        if button_left() and button_right(): break
+        printsc("But they cannot explore alone, for the quiet is enough to drive anybody mad.")
+        if button_left() and button_right(): break
+        printsc("Each dragon, a remnant of the planets that have been lost to time.")
+        if button_left() and button_right(): break
+        printsc("Fueled by greed, and the power that the stars could bring to their planets that they have lost.")
+        if button_left() and button_right(): break
+        printsc("Together, you take flight!")
+        if button_left() and button_right(): break
+        printsc("\nPress a button to continue.")
+        while not (button_left() or button_right()):
+            pass
+        break
     lcd_blit_file("dragons.rgb", 0, 0, width, height)
-    # lcd_clear()
+    screenwrite.col_start = randint(10, 120)
+    screenwrite.col = screenwrite.col_start
+    screenwrite.row = randint(10, 120)
 
     connection = Connection()
     # world = connection.world
