@@ -21,6 +21,7 @@ class Config:
         self.booster = 1e4
         self.fps = 60  # limiter
         self.max_volume = 1
+        self.intro = True
 
 
 config = Config()
