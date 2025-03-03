@@ -60,8 +60,10 @@ class World:
         # assert type(client_address) == str, client_address
         entity = Entity(world=self)
         entity.player_id = self.next_player_id
-        self.next_player_id += 1
+        color = ["red", "green", "blue", "yellow"][entity.player_id % 4]
+        entity.fname = f"dragon{color}.rgb"
         self.clients[client_address] = entity
+        self.next_player_id += 1
 
     def update_client(self, client_address, playerstate=None):
         if not client_address in self.clients.keys():
@@ -87,8 +89,11 @@ class World:
                 "pos": [client_sprite.pos.x, client_sprite.pos.y, client_sprite.pos.z],
                 "fname": client_sprite.fname,
                 "dim": (client_sprite.w, client_sprite.h),
-                "frame": client_sprite.frame
+                "frame": int(client_sprite.frame)
             }
+            client_sprite.frame += .25
+            if client_sprite.frame >= client_sprite.frame_count:
+              client_sprite.frame = 0
 
         # sprites = {}
         # sprites["player"] = {"pos": (self.friend_x, self.friend_y, 0)}
