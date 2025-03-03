@@ -37,10 +37,15 @@ from worldstate import worldstate
 
 sleep_ms = lambda x: sleep(x / 1000)
 
+last_player_id = 0
 
 class ServerSprite:
     def __init__(self, client_id, address):
-        self.client_id = client_id
+        # self.client_id = client_id
+        global last_player_id
+        last_player_id += 1
+        player_id = last_player_id
+        self.client_id = f'player{player_id}'
         self.address = address
         self.pos = None
 
@@ -49,8 +54,8 @@ class World:
     def __init__(self, world_id):
         self.world_id = world_id
         self.clients = {}
-        self.friend_x = random.randint(0, 480)
-        self.friend_y = random.randint(0, 320)
+        self.friend_x = random.randint(0, 480 - 32)
+        self.friend_y = random.randint(0, 320 - 32)
         self.friend_vx = random.randint(-5, 5)
         self.friend_vy = random.randint(-5, 5)
 
@@ -74,7 +79,7 @@ class World:
             sprites[client_id] = {"pos": client.pos}
 
         sprites = {}
-        sprites["player"] = {"pos": (self.friend_x, self.friend_y, 0)}
+        # sprites["player"] = {"pos": (self.friend_x, self.friend_y, 0)}
         sprites["hole"] = {"pos": (240, 160, 0)}
         # for client in self.clients:
         #     sprites[client.client_id] = {"pos": client.pos}
