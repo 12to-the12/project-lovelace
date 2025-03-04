@@ -1,11 +1,10 @@
-import time
 from config import config
-
+from time import time
 
 class Pulse:
     def __init__(self, period: float = 1) -> None:
         self.period = period
-        self.stamp = time.time()
+        self.stamp = time()
 
     # def refresh(self):
     #     self.new = epoch()
@@ -13,7 +12,7 @@ class Pulse:
     #     return elapsed
 
     def read(self):
-        now = time.time()
+        now = time()
         if (now - self.stamp) > self.period:
             self.stamp = now
             return True

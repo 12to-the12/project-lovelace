@@ -187,7 +187,7 @@ class Server_Connection:
                             waiting = False
                             break
                         else:
-                            print(f"{packet['type']}")
+                            # print(f"{packet['type']}")
                             print("ignoring irrelevant packet...")
 
                 except OSError as e:
@@ -202,7 +202,7 @@ class Server_Connection:
     def handle_packet(self, packet):
         if packet["type"] == "worldstate":
             print("received worldstate:")
-            print(packet)
+            # print(packet)
             for name, data in packet["worldstate"]["sprites"].items():
                 # if name not in world.sprites.keys(): self.world.sprites[name]=pos_sprite()
                 self.world.sprites[name] = data  # dict
@@ -259,6 +259,7 @@ class Server_Connection:
 
         while self.broadcast_queue.qsize() > 0:
             packet = self.broadcast_queue.get()
+            print(packet)
             self.network.udp_send(packet, self.addr, self.port)
             self.broadcast_queue.task_done()
 

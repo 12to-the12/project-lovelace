@@ -7,15 +7,10 @@ from sprite import Entity
 
 from netcode import Server_Connection
 from config import config
-from player_input import BoardInput
 
 from timing import Pulse, clock_wait
 from display import printsc
-import screenwrite
 from client_input import client_input
-
-
-from time import time_ns, sleep_us
 
 
 def readout(things):
@@ -132,9 +127,9 @@ def game_init():
     readouts = Pulse()
     erase = []
 
-    from buzzer import buzzer
-
     if not config.desktop_mode:
+        from buzzer import buzzer
+
         buzzer.stop()
 
     connection = Server_Connection()

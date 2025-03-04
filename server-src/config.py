@@ -16,7 +16,7 @@ class Config:
         self.server_address="192.168.4.141"
         # self.server_address = "172.20.10.9"
         self.snapshot_interval_ms = 20
-        self.force_factor = 1e2
+        self.force_factor = 1e-3
         self.sap = 0.8
         self.booster = 1e4
         self.fps = 60  # limiter

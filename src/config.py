@@ -15,6 +15,7 @@ class Config:
         if "Micro" in platform.platform():
             self.desktop_mode = False
         else:
+            print("running in desktop mode")
             self.desktop_mode = True
 
         self.readout_interval_ms = 1000  # ms

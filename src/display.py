@@ -142,4 +142,8 @@ def test_display():
 
 
 if __name__ != "__main__":
-    display = BoardDisplay()
+    from config import config
+    if config.desktop_mode:
+        display = PygameDisplay()
+    else:
+        display = BoardDisplay()
