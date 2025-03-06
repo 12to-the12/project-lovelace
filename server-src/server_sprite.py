@@ -46,6 +46,9 @@ class Vector:
             z = operation(self.z, other)
             return Vector(x, y, z)
 
+    def serialize(self):
+        return self.x, self.y, self.z
+
     def __repr__(self) -> str:
         return f"({self.x},{self.y},{self.z})"
 
@@ -75,10 +78,11 @@ class Vector:
 
 
 class Entity:
+    name = None
     frame = 0
+    frame_rate = 0.25
     fname = "dragonyellow.rgb"
-    w = 32
-    h = 32
+    dim = (32, 32)
     frame_count = 8
 
     def __init__(
@@ -93,11 +97,16 @@ class Entity:
         mass=None,
         world=None,
         bounds=(480, 320),
-        name=None,
+        **kwargs
     ):
+        for k,v in kwargs.items():
+          setattr(self, k, v)
         self.width, self.height = bounds
         factor = 1e2
-        if not worldspace_position:
+        if worldspace_position:
+            if isinstance(worldspace_position, (tuple, list)):
+                worldspace_position = Vector(*worldspace_position)
+        else:
             # pos = SpatialVector()
             worldspace_position = Vector()
         if not velocity:
@@ -117,6 +126,9 @@ class Entity:
             rotational_inertia = 0
         if not mass:
             mass = 1
+        if not self.name:
+            self.name = random.random()
+        
 
         assert world
 
@@ -134,6 +146,7 @@ class Entity:
         self.booster = config.booster
 
         self.world = world
+        self.world.entities.append(self)
 
         # assert (type(self.acc.x) == int) or (type(self.acc.x) == float), type(
         #     self.acc.x
@@ -172,6 +185,7 @@ class Entity:
         return distance
 
     def advance(self, time):
+        time *= .01 # FIXME: slowing time down
         self.acc = self.force / self.mass
 
         self.vel += self.acc * time
@@ -190,7 +204,11 @@ class Entity:
         self.pos.y %= self.height
         # if self.pos.x>=self.width:self
 
-        self.vel *= self.sap**time
+        # self.vel *= self.sap**time
+
+        self.frame += 0.25
+        if self.frame >= self.frame_count:
+            self.frame = 0
 
     def apply(self):
         time = self.age
@@ -221,7 +239,7 @@ class Entity:
         self.apply()
 
     def serialize(self):
-        pass
+        return {'pos': self.pos.serialize(), 'dim': self.dim, 'fname': self.fname}
 
     def screen_coords(self):
         screenspace_x = int(self.pos.x - self.world.viewport_entity.pos.x)
@@ -246,16 +264,6 @@ class Entity:
 
 
 class Player(Entity):
-    def __init__(self, *args, **kwargs) -> None:
-        if not "name" in kwargs.keys():
-            name = random.random()
-        else:
-            name = kwargs["name"]
-
-        self.world = kwargs["world"]
-        # self.world.sprites[name] = self
-        super().__init__(*args, **kwargs)
-
     def apply_booster(self, time):
         if self.vel.mag:
             # print("boosting...")
@@ -264,10 +272,10 @@ class Player(Entity):
             self.force += direction * time * self.booster
             # print(self.force)
 
-    def apply(self):
+    def apply(self, playerstate):
         time = self.age
         self.apply_gravity()
-        if button_right():
+        if playerstate["right"]:
             self.apply_booster(time)
         self.advance(time)
 

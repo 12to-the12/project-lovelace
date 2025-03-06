@@ -11,7 +11,7 @@ from time import time as epoch
 import sys
 
 from queue import Queue
-from server_sprite import Entity
+from server_sprite import Entity, Player
 
 # from msgpack import unpackb as deserialize
 # from msgpack import packb as serialize
@@ -41,28 +41,36 @@ sleep_ms = lambda x: sleep(x / 1000)
 
 class World:
     next_player_id = 0
+    entities = []
 
     def __init__(self, world_id):
         self.world_id = world_id
         self.clients = {}
-        self.friend_x = random.randint(0, 480 - 32)
-        self.friend_y = random.randint(0, 320 - 32)
-        self.friend_vx = random.randint(-5, 5)
-        self.friend_vy = random.randint(-5, 5)
 
         self.display_width = 480
         self.display_height = 320
         # where the world is in relation to the viewport
         # top left corner of the screen
-        self.viewport_entity = Entity(world=self)
-
+        # self.viewport_entity = Entity(world=self)
+        Entity(
+            (240, 160, 0),
+            dim = (64, 64),
+            world = self,
+            name = "hole",
+            fname = "blackhole.rgb",
+        )
+        Entity(
+            (400, 100, 0),
+            fname = "stardamage.rgb",
+            dim = (64, 64),
+            world = self,
+        )
     def add_client(self, client_address: str):
         # assert type(client_address) == str, client_address
-        entity = Entity(world=self)
-        entity.player_id = self.next_player_id
-        color = ["red", "green", "blue", "yellow"][entity.player_id % 4]
-        entity.fname = f"dragon{color}.rgb"
-        self.clients[client_address] = entity
+        player = Player((239.9, 159.9, 0), name=f"player{self.next_player_id}", world=self)
+        color = ["red", "green", "blue", "yellow"][self.next_player_id % 4]
+        player.fname = f"dragon{color}.rgb"
+        self.clients[client_address] = player
         self.next_player_id += 1
 
     def update_client(self, client_address, playerstate=None):
@@ -72,37 +80,15 @@ class World:
             # print(f"{playerstate}")
             # assert "pos" in playerstate.keys()
             # position_list = playerstate["pos"]
-            x = playerstate["x"]
-            y = playerstate["y"]
-            self.clients[client_address].push([x, y])
-            self.clients[client_address].apply()
+            # x = playerstate["x"]
+            # y = playerstate["y"]
+            # self.clients[client_address].push([x, y])
+            self.clients[client_address].apply(playerstate)
 
     def get_state_packet(self):
-        self.friend_x += self.friend_vx
-        self.friend_y += self.friend_vy
-        self.friend_x %= 480
-        self.friend_y %= 320
         sprites = {}
-        for client_address, client_sprite in self.clients.items():
-            sprites[f"player{client_sprite.player_id}"] = {
-                "pos": [client_sprite.pos.x, client_sprite.pos.y, client_sprite.pos.z],
-                "fname": client_sprite.fname,
-                "dim": (client_sprite.w, client_sprite.h),
-                "frame": int(client_sprite.frame),
-            }
-            client_sprite.frame += 0.25
-            if client_sprite.frame >= client_sprite.frame_count:
-                client_sprite.frame = 0
-
-        # sprites = {}
-        # sprites["player"] = {"pos": (self.friend_x, self.friend_y, 0)}
-        sprites["hole"] = {
-            "fname": "blackhole.rgb",
-            "dim": (64, 64),
-            "pos": (240, 160, 0),
-        }
-        # for client in self.clients:
-        #     sprites[client.client_id] = {"pos": client.pos}
+        for entity in self.entities:
+          sprites[entity.name] = entity.serialize()
 
         WORLDSTATE = {
             "type": "worldstate",
@@ -234,9 +220,7 @@ class network:
                     (packet, address) = self.broadcast_queue.get()
                     assert type(address) == str
                     # address = self.address_from_id(connecton_id)
-                    print(
-                        f"sending:\n{packet} to {address}:{self.client_listening_port}"
-                    )
+                    # print( f"sending:\n{packet} to {address}:{self.client_listening_port}" )
                     self.udp_send(sock, packet, address, self.client_listening_port)
                     # print("packet sent")
                     self.broadcast_queue.task_done()
@@ -255,7 +239,7 @@ class network:
         while True:
             try:
                 (packet, (address, port)) = self.udp_scan(sock)
-                print(f"{packet} from {address}:{port}")
+                # print(f"{packet} from {address}:{port}")
                 # self.udp_send(sock, packet, address, port)
                 self.handle_packet(packet, address)
             except Exception as e:
