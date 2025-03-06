@@ -5,8 +5,6 @@ from time import sleep
 
 if __name__ == "__main__":
     # menu = Menu()
-    game.game_init()
-    game.intro()
-    game.start_loop()
+    game.main()
     # profile.profile()
 

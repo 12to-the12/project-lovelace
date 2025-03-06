@@ -142,6 +142,10 @@ def start_loop():
     while True:
         game_loop()
 
+def main():
+    game_init()
+    intro()
+    start_loop()
 
 # def draw_circles():
 #     global clock_stamp_ns, config
@@ -254,4 +258,4 @@ def start_loop():
 #                 pygame.draw.circle(screen, (245, 243, 255), static, radius)
 
 if __name__ == "__main__":
-    game_init()
+    main()
